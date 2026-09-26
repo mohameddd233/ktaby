@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+<meta name="theme-color" content="#5c3d1f" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<title>كتابي — نظام إنشاء الكتب</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Amiri:wght@400;700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --primary: #8b5e34;
+    --primary-dark: #5c3d1f;
+    --accent: #d4a373;
+    --bg: #f5f0e8;
+    --card: #ffffff;
+    --text: #2d2416;
+    --muted: #8a7a68;
+    --border: #e0d5c2;
+    --danger: #c0392b;
+    --success: #27ae60;
+    --nav-h: 60px;
+  }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    font-family: 'Cairo', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== Navbar ===== */
+  .navbar {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    color: white;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    min-height: var(--nav-h);
+  }
+  .navbar h1 {
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 900;
+  }
+  .navbar h1 span { font-size: 24px; }
+  .nav-actions { display: flex; gap: 8px; }
+
+  /* ===== Buttons ===== */
+  .btn {
+    padding: 12px 18px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.15s;
+    min-height: 44px;
+    user-select: none;
+    touch-action: manipulation;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--accent); color: var(--primary-dark); }
+  .btn-light { background: rgba(255,255,255,0.2); color: white; }
+  .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-success { background: var(--success); color: white; }
+  .btn-sm { padding: 8px 12px; font-size: 13px; min-height: 38px; }
+  .btn-icon { padding: 10px; min-width: 44px; }
+
+  /* ===== Container ===== */
+  .container { max-width: 1300px; margin: 0 auto; padding: 16px; width: 100%; flex: 1; }
+
+  /* ===== Library Grid ===== */
+  .library-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .library-header h2 { font-size: 22px; color: var(--primary-dark); }
+  .library-header p { color: var(--muted); font-size: 13px; margin-top: 4px; }
+
+  .books-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 14px;
+  }
+
+  .book-card {
+    background: var(--card);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(139,94,52,0.12);
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    cursor: pointer;
+  }
+  .book-card:active { transform: scale(0.98); }
+  .book-cover {
+    width: 100%;
+    aspect-ratio: 3/4;
+    object-fit: cover;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 40px;
+    font-family: 'Amiri', serif;
+  }
+  .book-info { padding: 10px; flex: 1; display: flex; flex-direction: column; }
+  .book-info h3 {
+    font-size: 14px;
+    margin-bottom: 4px;
+    color: var(--primary-dark);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .book-info .author { font-size: 12px; color: var(--muted); margin-bottom: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .book-info .meta { font-size: 11px; color: var(--muted); margin-top: auto; }
+
+  .card-actions {
+    display: flex;
+    gap: 6px;
+    padding: 8px;
+    background: #faf6ef;
+    border-top: 1px solid var(--border);
+  }
+  .card-actions .btn { flex: 1; padding: 8px 4px; font-size: 12px; min-height: 38px; }
+
+  /* ===== Empty State ===== */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+  .empty-state .icon { font-size: 64px; margin-bottom: 16px; opacity: 0.5; }
+  .empty-state h3 { font-size: 20px; margin-bottom: 8px; color: var(--primary-dark); }
+  .empty-state p { margin-bottom: 20px; }
+
+  /* ===== Editor Layout ===== */
+  .editor-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 16px;
+  }
+
+  .panel {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 4px 16px rgba(139,94,52,0.1);
+    margin-bottom: 14px;
+  }
+  .panel h3 {
+    color: var(--primary-dark);
+    font-size: 16px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ===== Form Elements ===== */
+  .form-group { margin-bottom: 14px; }
+  .form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary-dark);
+    margin-bottom: 6px;
+  }
+  .form-group input[type="text"],
+  .form-group input[type="number"],
+  .form-group textarea,
+  .form-group select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 16px; /* منع زووم iOS */
+    background: #fdfcf9;
+    transition: border 0.2s;
+    color: var(--text);
+    min-height: 46px;
+  }
+  .form-group input:focus,
+  .form-group textarea:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: white;
+  }
+  .form-group textarea { resize: vertical; min-height: 120px; line-height: 1.7; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  input[type="color"] {
+    width: 100%;
+    height: 46px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    padding: 4px;
+    background: white;
+  }
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--primary);
+    height: 32px;
+  }
+  input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--primary);
+    vertical-align: middle;
+    margin-left: 6px;
+  }
+
+  /* ===== Chapters ===== */
+  .chapter-item {
+    background: #fdfcf9;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .chapter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    background: #f5efe4;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--primary-dark);
+    min-height: 50px;
+    gap: 8px;
+  }
+  .chapter-header span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
+  .chapter-body { padding: 12px; display: none; }
+  .chapter-item.open .chapter-body { display: block; }
+
+  /* ===== Preview ===== */
+  .preview-page {
+    background: white;
+    padding: 30px;
+    border-radius: 4px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    margin-bottom: 16px;
+    min-height: 400px;
+    position: relative;
+    line-height: 1.8;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+  }
+  .preview-page.lined {
+    background-image: repeating-linear-gradient(transparent, transparent 33px, #e5e7eb 34px);
+    background-position: 0 30px;
+  }
+  .preview-page.dotted {
+    background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  .preview-page.vintage {
+    background: #f5ecd7;
+  }
+
+  .preview-header, .preview-footer {
+    font-size: 12px;
+    color: #888;
+    text-align: center;
+    padding: 8px 0;
+  }
+  .preview-footer { border-top: 1px solid #eee; margin-top: 20px; }
+
+  /* ===== Book Viewer ===== */
+  .viewer-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 12px 0;
+  }
+  .flip-book {
+    display: flex;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    border-radius: 8px;
+    overflow: hidden;
+    max-width: 100%;
+  }
+  .flip-page {
+    width: 400px;
+    height: 560px;
+    padding: 32px;
+    background: white;
+    overflow-y: auto;
+    font-size: 15px;
+    line-height: 1.9;
+    border: 1px solid #e5e5e5;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+  }
+  .flip-page.right { border-left: none; }
+  .flip-page.left { border-right: none; }
+  .flip-page .page-num {
+    text-align: center;
+    font-size: 12px;
+    color: #999;
+    margin-top: 20px;
+  }
+  .flip-page .page-footer {
+    border-top: 1px solid #eee;
+    margin-top: 20px;
+    padding-top: 10px;
+    text-align: center;
+    font-size: 11px;
+    color: #aaa;
+  }
+
+  /* ===== Modal ===== */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 16px;
+    overflow-y: auto;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: white;
+    border-radius: 14px;
+    max-width: 1100px;
+    width: 100%;
+    max-height: 92vh;
+    overflow-y: auto;
+    padding: 20px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--border);
+    gap: 10px;
+  }
+  .modal-header h3 {
+    color: var(--primary-dark);
+    font-size: 17px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
+  .close-btn {
+    background: rgba(0,0,0,0.05);
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: var(--muted);
+    line-height: 1;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .close-btn:active { background: rgba(0,0,0,0.1); }
+
+  /* ===== Cover Preview ===== */
+  .cover-preview {
+    width: 100%;
+    aspect-ratio: 3/4;
+    max-height: 260px;
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    background: #faf6ef;
+    transition: all 0.2s;
+  }
+  .cover-preview:active { background: #f0e8d8; }
+  .cover-preview img { width: 100%; height: 100%; object-fit: cover; }
+
+  /* ===== Footer ===== */
+  .site-footer {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    color: white;
+    text-align: center;
+    padding: 18px 16px;
+    font-size: 13px;
+    margin-top: auto;
+  }
+  .site-footer strong { color: var(--accent); font-weight: 700; }
+
+  /* ===== Tabs ===== */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    background: #f5efe4;
+    padding: 4px;
+    border-radius: 10px;
+  }
+  .tab {
+    flex: 1;
+    padding: 10px 6px;
+    text-align: center;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--muted);
+    transition: all 0.2s;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+  .tab.active {
+    background: white;
+    color: var(--primary-dark);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+
+  .hidden { display: none !important; }
+
+  /* ===== Toast ===== */
+  .toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(120px);
+    background: var(--primary-dark);
+    color: white;
+    padding: 12px 22px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    z-index: 2000;
+    transition: transform 0.3s;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    max-width: 90vw;
+    text-align: center;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ===== Mobile FAB (Floating Action Button) ===== */
+  .fab {
+    position: fixed;
+    bottom: 90px;
+    left: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    border: none;
+    font-size: 26px;
+    box-shadow: 0 8px 24px rgba(139,94,52,0.4);
+    cursor: pointer;
+    z-index: 90;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s;
+  }
+  .fab:active { transform: scale(0.9); }
+
+  /* ===== Mobile Bottom Bar (في المحرر) ===== */
+  .mobile-bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 2px solid var(--border);
+    padding: 8px 10px;
+    display: none;
+    gap: 8px;
+    z-index: 95;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+  .mobile-bottom-bar .btn { flex: 1; font-size: 12px; padding: 8px 6px; }
+
+  /* ============================================================
+     RESPONSIVE — Mobile
+     ============================================================ */
+  @media (max-width: 768px) {
+    :root { --nav-h: 56px; }
+
+    .navbar { padding: 10px 14px; }
+    .navbar h1 { font-size: 17px; gap: 6px; }
+    .navbar h1 span { font-size: 20px; }
+    .nav-actions .btn { padding: 8px 12px; font-size: 13px; min-height: 40px; }
+    .nav-actions .btn .label-full { display: none; }
+
+    .container { padding: 12px; padding-bottom: 80px; }
+
+    .library-header h2 { font-size: 19px; }
+    .library-header p { font-size: 12px; }
+    .library-header > button { display: none; } /* هيبقى FAB */
+
+    .books-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .book-info { padding: 8px; }
+    .book-info h3 { font-size: 13px; }
+    .card-actions { padding: 6px; gap: 4px; }
+    .card-actions .btn { padding: 6px 2px; font-size: 11px; min-height: 34px; }
+
+    .fab { display: flex; }
+
+    /* Editor on Mobile */
+    .editor-layout {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .panel {
+      padding: 14px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+    }
+    .panel h3 { font-size: 15px; }
+
+    .form-row { grid-template-columns: 1fr; }
+
+    /* منع الـ sticky للـ sidebar على الموبايل */
+    .editor-layout > div:last-child {
+      position: static !important;
+    }
+
+    /* الأزرار السفلية الثابتة في المحرر */
+    .mobile-bottom-bar { display: flex; }
+    .editor-layout > div:last-child {
+      padding-bottom: 70px;
+    }
+
+    /* Modal على الموبايل — ملء الشاشة */
+    .modal-overlay { padding: 0; align-items: stretch; }
+    .modal {
+      max-height: 100vh;
+      height: 100vh;
+      border-radius: 0;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-header { flex-shrink: 0; }
+
+    /* Viewer على الموبايل — صفحة واحدة */
+    .flip-book { flex-direction: column; width: 100%; }
+    .flip-page {
+      width: 100%;
+      height: auto;
+      min-height: 70vh;
+      padding: 24px;
+      border: 1px solid #e5e5e5 !important;
+    }
+    .flip-page.left { display: none !important; }
+    .flip-page.right { border-radius: 8px; }
+
+    .viewer-container { padding: 8px 0; }
+
+    /* Tabs أصغر */
+    .tab { font-size: 11px; padding: 8px 4px; }
+
+    /* Preview pages */
+    .preview-page { padding: 20px; min-height: 320px; }
+
+    /* Toast */
+    .toast { bottom: 90px; font-size: 13px; padding: 10px 18px; }
+  }
+
+  @media (max-width: 380px) {
+    .books-grid { grid-template-columns: 1fr; }
+    .navbar h1 { font-size: 15px; }
+  }
+
+  /* Landscape phone */
+  @media (max-width: 900px) and (orientation: landscape) {
+    .flip-page { min-height: 60vh; }
+  }
+
+  /* ===== iOS Safe Area ===== */
+  @supports (padding: env(safe-area-inset-bottom)) {
+    .mobile-bottom-bar { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+    .site-footer { padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
+  }
+
+  /* ===== Prevent zoom on double tap ===== */
+  button, .btn, .tab, .book-card { touch-action: manipulation; }
+
+  /* ===== Smooth scroll ===== */
+  html { scroll-behavior: smooth; }
+
+  /* ===== Custom scrollbar for modal ===== */
+  .modal::-webkit-scrollbar { width: 6px; }
+  .modal::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- ============ NAVBAR ============ -->
+<nav class="navbar">
+  <h1><span>📚</span> كتابي</h1>
+  <div class="nav-actions">
+    <button class="btn btn-light" onclick="goHome()">🏠 <span class="label-full">المكتبة</span></button>
+    <button class="btn btn-primary" onclick="createNewBook()">➕ <span class="label-full">كتاب جديد</span></button>
+  </div>
+</nav>
+
+<!-- ============ MAIN ============ -->
+<div class="container" id="app"></div>
+
+<!-- ============ FAB (Mobile) ============ -->
+<button class="fab" id="fab" onclick="createNewBook()">+</button>
+
+<!-- ============ FOOTER ============ -->
+<footer class="site-footer">
+  Designed and Programming by <strong>Mohamed Ali</strong> © 2025
+</footer>
+
+<!-- ============ MODAL ============ -->
+<div class="modal-overlay" id="modal">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<!-- ============ MOBILE BOTTOM BAR ============ -->
+<div class="mobile-bottom-bar hidden" id="mobileBar">
+  <button class="btn btn-success" onclick="saveCurrentBook()">💾 حفظ</button>
+  <button class="btn btn-primary" onclick="openViewer(currentEditingId)">👁️ عرض</button>
+  <button class="btn btn-outline" onclick="exportPDF(currentEditingId)">📄 PDF</button>
+</div>
+
+<!-- ============ TOAST ============ -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================
+   كتابي — نظام إنشاء وإدارة الكتب (Mobile-First)
+   Designed and Programming by Mohamed Ali
+   ===================================================== */
+
+const STORAGE_KEY = 'kitabi_books';
+let currentEditingId = null;
+let currentTab = 'content';
+let viewerBook = null;
+let viewerPages = [];
+let viewerIndex = 0;
+let isMobile = window.innerWidth <= 768;
+
+/* ============== STORAGE ============== */
+function getBooks() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch { return []; }
+}
+function saveBooks(books) { localStorage.setItem(STORAGE_KEY, JSON.stringify(books)); }
+function getBook(id) { return getBooks().find(b => b.id === id); }
+function upsertBook(book) {
+  const books = getBooks();
+  const idx = books.findIndex(b => b.id === book.id);
+  if (idx >= 0) books[idx] = book; else books.unshift(book);
+  saveBooks(books);
+}
+function deleteBook(id) { saveBooks(getBooks().filter(b => b.id !== id)); }
+
+/* ============== UTILS ============== */
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+function toast(msg, type='info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = type === 'error' ? '#c0392b' : type === 'success' ? '#27ae60' : '#5c3d1f';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+function escapeHtml(s='') {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function defaultDesign() {
+  return {
+    pageColor: '#ffffff',
+    textColor: '#111111',
+    fontFamily: 'Cairo',
+    fontSize: 16,
+    lineHeight: 1.8,
+    paperStyle: 'plain',
+    pageSize: 'A5',
+    margin: 40,
+    direction: 'rtl',
+    headerText: '',
+    footerText: 'Designed and Programming by Mohamed Ali',
+    showPageNumbers: true,
+    pageNumberStyle: 'bottom-center'
+  };
+}
+function newBook() {
+  return {
+    id: uid(),
+    title: 'كتاب بدون عنوان',
+    author: '',
+    description: '',
+    category: '',
+    isbn: '',
+    cover: '',
+    chapters: [{ title: 'الفصل الأول', content: '', order: 0 }],
+    design: defaultDesign(),
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  };
+}
+
+/* ============== NAVIGATION ============== */
+function goHome() {
+  currentEditingId = null;
+  document.getElementById('mobileBar').classList.add('hidden');
+  document.getElementById('fab').classList.remove('hidden');
+  renderLibrary();
+}
+function createNewBook() {
+  const b = newBook();
+  upsertBook(b);
+  openEditor(b.id);
+}
+function openEditor(id) {
+  currentEditingId = id;
+  currentTab = 'content';
+  renderEditor();
+}
+
+/* ============== LIBRARY ============== */
+function renderLibrary() {
+  const app = document.getElementById('app');
+  const books = getBooks();
+
+  if (books.length === 0) {
+    app.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">📖</div>
+        <h3>مكتبتك فارغة</h3>
+        <p>ابدأ بإنشاء أول كتاب لك الآن</p>
+        <button class="btn btn-primary" onclick="createNewBook()">➕ إنشاء كتاب جديد</button>
+      </div>`;
+    return;
+  }
+
+  app.innerHTML = `
+    <div class="library-header">
+      <div>
+        <h2>📚 مكتبتي</h2>
+        <p>${books.length} كتاب في مكتبتك</p>
+      </div>
+      <button class="btn btn-primary" onclick="createNewBook()">➕ كتاب جديد</button>
+    </div>
+    <div class="books-grid">
+      ${books.map(b => bookCardHtml(b)).join('')}
+    </div>`;
+}
+function bookCardHtml(b) {
+  const cover = b.cover
+    ? `<img src="${b.cover}" class="book-cover" alt="cover">`
+    : `<div class="book-cover">${escapeHtml((b.title || 'ك')[0])}</div>`;
+  const chaptersCount = (b.chapters || []).length;
+  return `
+    <div class="book-card">
+      ${cover}
+      <div class="book-info">
+        <h3 title="${escapeHtml(b.title)}">${escapeHtml(b.title)}</h3>
+        <div class="author">${escapeHtml(b.author || 'مؤلف مجهول')}</div>
+        <div class="meta">${chaptersCount} فصل</div>
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openEditor('${b.id}')">✏️</button>
+        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openViewer('${b.id}')">👁️</button>
+        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();confirmDelete('${b.id}')">🗑️</button>
+      </div>
+    </div>`;
+}
+function confirmDelete(id) {
+  const b = getBook(id);
+  if (!b) return;
+  if (confirm(`هل أنت متأكد من حذف "${b.title}"؟`)) {
+    deleteBook(id);
+    toast('تم حذف الكتاب', 'success');
+    goHome();
+  }
+}
+
+/* ============== EDITOR ============== */
+function renderEditor() {
+  const b = getBook(currentEditingId);
+  if (!b) { goHome(); return; }
+  const d = b.design || defaultDesign();
+
+  // إظهار الشريط السفلي على الموبايل
+  if (isMobile) {
+    document.getElementById('mobileBar').classList.remove('hidden');
+    document.getElementById('fab').classList.add('hidden');
+  }
+
+  document.getElementById('app').innerHTML = `
+    <div class="editor-layout">
+      <!-- Main Editor -->
+      <div>
+        <div class="panel">
+          <h3>📝 محتوى الكتاب</h3>
+          <div class="tabs">
+            <div class="tab ${currentTab==='content'?'active':''}" onclick="switchTab('content')">📄 المحتوى</div>
+            <div class="tab ${currentTab==='info'?'active':''}" onclick="switchTab('info')">ℹ️ بيانات</div>
+            <div class="tab ${currentTab==='preview'?'active':''}" onclick="switchTab('preview')">👁️ معاينة</div>
+            <div class="tab ${currentTab==='design'?'active':''}" onclick="switchTab('design')">🎨 تصميم</div>
+          </div>
+
+          <div id="tab-content" class="${currentTab!=='content'?'hidden':''}">
+            <div class="form-group">
+              <label>عنوان الكتاب</label>
+              <input type="text" value="${escapeHtml(b.title)}" oninput="updateField('title', this.value)">
+            </div>
+            <div class="form-group">
+              <label>الفصول</label>
+              <div id="chaptersList"></div>
+              <button class="btn btn-outline btn-sm" onclick="addChapter()" style="margin-top:8px;width:100%">➕ إضافة فصل</button>
+            </div>
+          </div>
+
+          <div id="tab-info" class="${currentTab!=='info'?'hidden':''}">
+            <div class="form-group">
+              <label>اسم المؤلف</label>
+              <input type="text" value="${escapeHtml(b.author)}" oninput="updateField('author', this.value)">
+            </div>
+            <div class="form-group">
+              <label>التصنيف</label>
+              <input type="text" value="${escapeHtml(b.category)}" oninput="updateField('category', this.value)" placeholder="رواية، شعر، علمي...">
+            </div>
+            <div class="form-group">
+              <label>الوصف</label>
+              <textarea oninput="updateField('description', this.value)" placeholder="وصف موجز للكتاب...">${escapeHtml(b.description)}</textarea>
+            </div>
+            <div class="form-group">
+              <label>ISBN (اختياري)</label>
+              <input type="text" value="${escapeHtml(b.isbn)}" oninput="updateField('isbn', this.value)">
+            </div>
+
+            <h3 style="margin-top:20px">🎨 الغلاف</h3>
+            <div class="cover-preview" onclick="document.getElementById('coverInput').click()">
+              ${b.cover ? `<img src="${b.cover}">` : '<span>📷 اضغط لرفع الغلاف</span>'}
+            </div>
+            <input type="file" id="coverInput" accept="image/*" class="hidden" onchange="handleCover(event)">
+            ${b.cover ? `<button class="btn btn-danger btn-sm" style="width:100%" onclick="removeCover()">🗑️ إزالة الغلاف</button>` : ''}
+          </div>
+
+          <div id="tab-preview" class="${currentTab!=='preview'?'hidden':''}">
+            <div id="previewContainer"></div>
+          </div>
+
+          <div id="tab-design" class="${currentTab!=='design'?'hidden':''}">
+            <div class="form-group">
+              <label>لون الصفحة</label>
+              <input type="color" value="${d.pageColor}" oninput="updateDesign('pageColor', this.value)">
+            </div>
+            <div class="form-group">
+              <label>لون النص</label>
+              <input type="color" value="${d.textColor}" oninput="updateDesign('textColor', this.value)">
+            </div>
+            <div class="form-group">
+              <label>نوع الخط</label>
+              <select onchange="updateDesign('fontFamily', this.value)">
+                <option value="Cairo" ${d.fontFamily==='Cairo'?'selected':''}>Cairo</option>
+                <option value="Amiri" ${d.fontFamily==='Amiri'?'selected':''}>Amiri</option>
+                <option value="Tajawal" ${d.fontFamily==='Tajawal'?'selected':''}>Tajawal</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>حجم الخط: ${d.fontSize}px</label>
+              <input type="range" min="12" max="24" value="${d.fontSize}" oninput="updateDesign('fontSize', +this.value)">
+            </div>
+            <div class="form-group">
+              <label>ارتفاع السطر: ${d.lineHeight}</label>
+              <input type="range" min="1.2" max="2.5" step="0.1" value="${d.lineHeight}" oninput="updateDesign('lineHeight', +this.value)">
+            </div>
+            <div class="form-group">
+              <label>شكل الورق</label>
+              <select onchange="updateDesign('paperStyle', this.value)">
+                <option value="plain" ${d.paperStyle==='plain'?'selected':''}>عادي</option>
+                <option value="lined" ${d.paperStyle==='lined'?'selected':''}>مسطّر</option>
+                <option value="dotted" ${d.paperStyle==='dotted'?'selected':''}>منقّط</option>
+                <option value="vintage" ${d.paperStyle==='vintage'?'selected':''}>ورق قديم</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>حجم الكتاب</label>
+              <select onchange="updateDesign('pageSize', this.value)">
+                <option value="A4" ${d.pageSize==='A4'?'selected':''}>A4</option>
+                <option value="A5" ${d.pageSize==='A5'?'selected':''}>A5</option>
+                <option value="6x9" ${d.pageSize==='6x9'?'selected':''}>6×9 inch</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>الهوامش: ${d.margin}px</label>
+              <input type="range" min="10" max="80" value="${d.margin}" oninput="updateDesign('margin', +this.value)">
+            </div>
+            <div class="form-group">
+              <label>الاتجاه</label>
+              <select onchange="updateDesign('direction', this.value)">
+                <option value="rtl" ${d.direction==='rtl'?'selected':''}>عربي (RTL)</option>
+                <option value="ltr" ${d.direction==='ltr'?'selected':''}>إنجليزي (LTR)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>نص الهيدر</label>
+              <input type="text" value="${escapeHtml(d.headerText)}" oninput="updateDesign('headerText', this.value)">
+            </div>
+            <div class="form-group">
+              <label>نص الفوتر</label>
+              <input type="text" value="${escapeHtml(d.footerText)}" oninput="updateDesign('footerText', this.value)">
+            </div>
+            <div class="form-group">
+              <label><input type="checkbox" ${d.showPageNumbers?'checked':''} onchange="updateDesign('showPageNumbers', this.checked)"> إظهار أرقام الصفحات</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Desktop Sidebar -->
+      <div class="${isMobile?'hidden':''}">
+        <div class="panel">
+          <h3>💾 حفظ وتصدير</h3>
+          <button class="btn btn-success" style="width:100%;margin-bottom:8px" onclick="saveCurrentBook()">💾 حفظ</button>
+          <button class="btn btn-primary" style="width:100%;margin-bottom:8px" onclick="openViewer('${b.id}')">👁️ عرض الكتاب</button>
+          <button class="btn btn-outline" style="width:100%;margin-bottom:8px" onclick="exportPDF('${b.id}')">📄 تصدير PDF</button>
+          <button class="btn btn-danger" style="width:100%" onclick="confirmDelete('${b.id}');goHome()">🗑️ حذف الكتاب</button>
+        </div>
+      </div>
+    </div>`;
+
+  renderChapters();
+  if (currentTab === 'preview') renderPreview();
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  const tabs = ['content', 'info', 'preview', 'design'];
+  const idx = tabs.indexOf(tab);
+  if (idx >= 0) document.querySelectorAll('.tab')[idx].classList.add('active');
+  document.getElementById('tab-content').classList.toggle('hidden', tab !== 'content');
+  document.getElementById('tab-info').classList.toggle('hidden', tab !== 'info');
+  document.getElementById('tab-preview').classList.toggle('hidden', tab !== 'preview');
+  document.getElementById('tab-design').classList.toggle('hidden', tab !== 'design');
+  if (tab === 'preview') renderPreview();
+}
+
+/* ============== CHAPTERS ============== */
+function renderChapters() {
+  const b = getBook(currentEditingId);
+  if (!b) return;
+  const list = document.getElementById('chaptersList');
+  list.innerHTML = (b.chapters || []).map((c, i) => `
+    <div class="chapter-item ${i===0?'open':''}" id="ch-${i}">
+      <div class="chapter-header" onclick="toggleChapter(${i})">
+        <span>📖 ${escapeHtml(c.title || 'فصل')}</span>
+        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();removeChapter(${i})">🗑️</button>
+      </div>
+      <div class="chapter-body">
+        <div class="form-group">
+          <label>عنوان الفصل</label>
+          <input type="text" value="${escapeHtml(c.title)}" oninput="updateChapter(${i}, 'title', this.value)">
+        </div>
+        <div class="form-group">
+          <label>محتوى الفصل</label>
+          <textarea rows="8" oninput="updateChapter(${i}, 'content', this.value)" placeholder="اكتب محتوى الفصل هنا...">${escapeHtml(c.content)}</textarea>
+        </div>
+      </div>
+    </div>`).join('');
+}
+function toggleChapter(i) {
+  document.getElementById(`ch-${i}`).classList.toggle('open');
+}
+function addChapter() {
+  const b = getBook(currentEditingId);
+  b.chapters.push({ title: `فصل ${b.chapters.length + 1}`, content: '', order: b.chapters.length });
+  b.updatedAt = Date.now();
+  upsertBook(b);
+  renderChapters();
+  toast('تمت إضافة فصل جديد', 'success');
+}
+function removeChapter(i) {
+  const b = getBook(currentEditingId);
+  if (b.chapters.length === 1) { toast('لا يمكن حذف الفصل الأخير', 'error'); return; }
+  if (!confirm('حذف هذا الفصل؟')) return;
+  b.chapters.splice(i, 1);
+  b.updatedAt = Date.now();
+  upsertBook(b);
+  renderChapters();
+}
+function updateChapter(i, field, value) {
+  const b = getBook(currentEditingId);
+  b.chapters[i][field] = value;
+  b.updatedAt = Date.now();
+  upsertBook(b);
+}
+
+/* ============== FIELDS ============== */
+function updateField(field, value) {
+  const b = getBook(currentEditingId);
+  b[field] = value;
+  b.updatedAt = Date.now();
+  upsertBook(b);
+}
+function updateDesign(field, value) {
+  const b = getBook(currentEditingId);
+  if (!b.design) b.design = defaultDesign();
+  b.design[field] = value;
+  b.updatedAt = Date.now();
+  upsertBook(b);
+  // تحديث الـ label فقط لو كان range
+  if (field === 'fontSize' || field === 'lineHeight' || field === 'margin') {
+    const ranges = document.querySelectorAll('input[type="range"]');
+    ranges.forEach(r => {
+      const label = r.previousElementSibling;
+      if (label && label.tagName === 'LABEL') {
+        const base = label.textContent.split(':')[0];
+        label.textContent = `${base}: ${value}${field === 'margin' ? 'px' : ''}`;
+      }
+    });
+  }
+  if (currentTab === 'preview') renderPreview();
+}
+
+/* ============== COVER ============== */
+function handleCover(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const b = getBook(currentEditingId);
+    b.cover = ev.target.result;
+    b.updatedAt = Date.now();
+    upsertBook(b);
+    renderEditor();
+    switchTab('info');
+    toast('تم رفع الغلاف', 'success');
+  };
+  reader.readAsDataURL(file);
+}
+function removeCover() {
+  const b = getBook(currentEditingId);
+  b.cover = '';
+  upsertBook(b);
+  renderEditor();
+  switchTab('info');
+}
+
+/* ============== SAVE ============== */
+function saveCurrentBook() {
+  const b = getBook(currentEditingId);
+  if (!b) return;
+  b.updatedAt = Date.now();
+  upsertBook(b);
+  toast('تم حفظ الكتاب بنجاح ✅', 'success');
+}
+
+/* ============== PREVIEW ============== */
+function renderPreview() {
+  const b = getBook(currentEditingId);
+  if (!b) return;
+  const d = b.design || defaultDesign();
+  const pages = buildPages(b);
+  const container = document.getElementById('previewContainer');
+  container.innerHTML = pages.slice(0, 4).map((p, i) => `
+    <div class="preview-page ${d.paperStyle}"
+         style="background-color:${d.pageColor};color:${d.textColor};font-family:'${d.fontFamily}',sans-serif;font-size:${d.fontSize}px;line-height:${d.lineHeight};padding:${isMobile ? 20 : d.margin}px;direction:${d.direction}">
+      ${d.headerText ? `<div class="preview-header">${escapeHtml(d.headerText)}</div>` : ''}
+      ${p.html}
+      ${d.footerText ? `<div class="preview-footer">${escapeHtml(d.footerText)}</div>` : ''}
+      ${d.showPageNumbers ? `<div style="text-align:center;font-size:12px;color:#999;margin-top:10px">${i+1}</div>` : ''}
+    </div>`).join('');
+}
+
+/* ============== BUILD PAGES ============== */
+function buildPages(book) {
+  const d = book.design || defaultDesign();
+  const charsPerPage = Math.floor(
+    (d.pageSize === 'A4' ? 2200 :
+     d.pageSize === 'A5' ? 1200 : 1500) *
+    (16 / d.fontSize)
+  );
+  const pages = [];
+
+  // Title page
+  pages.push({
+    html: `
+      <div style="text-align:center;padding:40px 0">
+        ${book.cover ? `<img src="${book.cover}" style="max-width:70%;max-height:280px;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.2);margin-bottom:24px">` : ''}
+        <h1 style="font-size:1.8em;margin:16px 0">${escapeHtml(book.title)}</h1>
+        ${book.author ? `<p style="font-size:1.1em;opacity:0.7">${escapeHtml(book.author)}</p>` : ''}
+        ${book.category ? `<p style="opacity:0.5;margin-top:8px">${escapeHtml(book.category)}</p>` : ''}
+      </div>`
+  });
+
+  // Description
+  if (book.description) {
+    pages.push({
+      html: `<h2 style="margin-bottom:16px">نبذة عن الكتاب</h2><p>${escapeHtml(book.description).replace(/\n/g,'<br>')}</p>`
+    });
+  }
+
+  // Chapters
+  (book.chapters || []).forEach(ch => {
+    const content = ch.content || '';
+    const total = Math.max(1, Math.ceil(content.length / charsPerPage));
+    for (let i = 0; i < total; i++) {
+      const slice = content.slice(i * charsPerPage, (i + 1) * charsPerPage);
+      pages.push({
+        html: `
+          ${i === 0 ? `<h2 style="margin-bottom:16px">${escapeHtml(ch.title)}</h2>` : ''}
+          <p style="white-space:pre-wrap">${escapeHtml(slice) || '<em style="opacity:0.4">(فصل فارغ)</em>'}</p>`
+      });
+    }
+  });
+
+  return pages;
+}
+
+/* ============== VIEWER ============== */
+function openViewer(id) {
+  const b = getBook(id);
+  if (!b) return;
+  viewerBook = b;
+  viewerPages = buildPages(b);
+  viewerIndex = 0;
+  renderViewer();
+  document.getElementById('modal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('active');
+  document.body.style.overflow = '';
+}
+function renderViewer() {
+  const b = viewerBook;
+  const d = b.design || defaultDesign();
+  const total = viewerPages.length;
+
+  // على الموبايل نعرض صفحة واحدة
+  const pagesToShow = isMobile ? [viewerPages[viewerIndex]] : [viewerPages[viewerIndex], viewerPages[viewerIndex + 1]];
+  const startNum = viewerIndex;
+
+  const pageStyle = `background-color:${d.pageColor};color:${d.textColor};font-family:'${d.fontFamily}',sans-serif;font-size:${d.fontSize}px;line-height:${d.lineHeight};direction:${d.direction}`;
+  const bgClass = d.paperStyle;
+
+  const renderPage = (p, num, side) => {
+    if (!p) return `<div class="flip-page ${side}" style="opacity:0.15;${pageStyle}"></div>`;
+    return `
+      <div class="flip-page ${side} ${bgClass}" style="${pageStyle};padding:${isMobile ? 24 : d.margin}px">
+        ${d.headerText ? `<div style="font-size:11px;color:#999;text-align:center;margin-bottom:14px">${escapeHtml(d.headerText)}</div>` : ''}
+        <div>${p.html}</div>
+        ${d.footerText ? `<div class="page-footer">${escapeHtml(d.footerText)}</div>` : ''}
+        ${d.showPageNumbers ? `<div class="page-num">${num + 1}</div>` : ''}
+      </div>`;
+  };
+
+  document.getElementById('modalContent').innerHTML = `
+    <div class="modal-header">
+      <h3>📖 ${escapeHtml(b.title)}</h3>
+      <button class="close-btn" onclick="closeModal()">×</button>
+    </div>
+
+    <div style="text-align:center;margin-bottom:12px;color:var(--muted);font-size:13px">
+      صفحة ${viewerIndex + 1} من ${total}
+    </div>
+
+    <div class="viewer-container">
+      <div class="flip-book">
+        ${pagesToShow.map((p, i) => renderPage(p, startNum + i, i === 0 ? 'right' : 'left')).join('')}
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:center;gap:10px;margin-top:16px">
+      <button class="btn btn-outline" onclick="prevPage()" ${viewerIndex===0?'style="opacity:0.4" disabled':''}>→ السابق</button>
+      <button class="btn btn-primary" onclick="nextPage()" ${viewerIndex + (isMobile?1:2) >= total?'style="opacity:0.4" disabled':''}>التالي ←</button>
+    </div>
+
+    <div style="display:flex;justify-content:center;margin-top:12px">
+      <button class="btn btn-success" onclick="exportPDF('${b.id}')">📄 تصدير PDF</button>
+    </div>
+
+    ${d.footerText ? `<div style="text-align:center;font-size:11px;color:#aaa;margin-top:16px">${escapeHtml(d.footerText)}</div>` : ''}`;
+
+  // Scroll to top of page on page change (mobile)
+  if (isMobile) {
+    const fp = document.querySelector('.flip-page.right');
+    if (fp) fp.scrollTop = 0;
+  }
+}
+function nextPage() {
+  const step = isMobile ? 1 : 2;
+  if (viewerIndex + step < viewerPages.length) {
+    viewerIndex += step;
+    renderViewer();
+  }
+}
+function prevPage() {
+  const step = isMobile ? 1 : 2;
+  if (viewerIndex - step >= 0) {
+    viewerIndex -= step;
+    renderViewer();
+  }
+}
+
+/* ============== PDF EXPORT ============== */
+function exportPDF(id) {
+  const b = getBook(id);
+  if (!b) return;
+  const d = b.design || defaultDesign();
+  const pages = buildPages(b);
+
+  const sizeMap = {
+    A4: { w: '210mm', h: '297mm' },
+    A5: { w: '148mm', h: '210mm' },
+    '6x9': { w: '152.4mm', h: '228.6mm' }
+  };
+  const size = sizeMap[d.pageSize] || sizeMap.A5;
+
+  const wrap = document.createElement('div');
+  wrap.style.position = 'fixed';
+  wrap.style.left = '-10000px';
+  wrap.style.top = '0';
+
+  pages.forEach((p, i) => {
+    const page = document.createElement('div');
+    page.style.width = size.w;
+    page.style.height = size.h;
+    page.style.padding = d.margin + 'px';
+    page.style.boxSizing = 'border-box';
+    page.style.backgroundColor = d.pageColor;
+    page.style.color = d.textColor;
+    page.style.fontFamily = `'${d.fontFamily}', sans-serif`;
+    page.style.fontSize = d.fontSize + 'px';
+    page.style.lineHeight = d.lineHeight;
+    page.style.direction = d.direction;
+    page.style.position = 'relative';
+    page.style.overflow = 'hidden';
+    page.style.pageBreakAfter = 'always';
+
+    if (d.paperStyle === 'vintage') page.style.background = '#f5ecd7';
+
+    page.innerHTML = `
+      ${d.headerText ? `<div style="font-size:11px;color:#999;text-align:center;margin-bottom:16px">${escapeHtml(d.headerText)}</div>` : ''}
+      <div>${p.html}</div>
+      ${d.footerText ? `<div style="position:absolute;bottom:${d.margin/2}px;left:${d.margin}px;right:${d.margin}px;text-align:center;font-size:11px;color:#aaa;border-top:1px solid #eee;padding-top:8px">${escapeHtml(d.footerText)}</div>` : ''}
+      ${d.showPageNumbers ? `<div style="position:absolute;bottom:${d.margin/4}px;right:${d.margin}px;font-size:11px;color:#999">${i+1}</div>` : ''}
+    `;
+    wrap.appendChild(page);
+  });
+
+  document.body.appendChild(wrap);
+
+  const opt = {
+    margin: 0,
+    filename: `${b.title || 'book'}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, backgroundColor: d.pageColor },
+    jsPDF: { unit: 'mm', format: d.pageSize === 'A5' ? 'a5' : d.pageSize === 'A4' ? 'a4' : [152.4, 228.6], orientation: 'portrait' }
+  };
+
+  toast('جاري تصدير PDF...', 'info');
+  html2pdf().set(opt).from(wrap).save().then(() => {
+    document.body.removeChild(wrap);
+    toast('تم تصدير PDF بنجاح ✅', 'success');
+  }).catch(err => {
+    console.error(err);
+    document.body.removeChild(wrap);
+    toast('حدث خطأ أثناء التصدير', 'error');
+  });
+}
+
+/* ============== RESPONSIVE HANDLER ============== */
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    const wasMobile = isMobile;
+    isMobile = window.innerWidth <= 768;
+    if (wasMobile !== isMobile) {
+      if (currentEditingId) renderEditor();
+      else renderLibrary();
+    }
+  }, 200);
+});
+
+/* ============== SWIPE GESTURES (Mobile Viewer) ============== */
+document.addEventListener('touchstart', e => {
+  const modal = document.getElementById('modal');
+  if (!modal.classList.contains('active')) return;
+  if (e.touches.length !== 1) return;
+  const startX = e.touches[0].clientX;
+  const startY = e.touches[0].clientY;
+  const onEnd = ev => {
+    const dx = ev.changedTouches[0].clientX - startX;
+    const dy = ev.changedTouches[0].clientY - startY;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
+      if (dx > 0) nextPage(); // swipe right = next (RTL)
+      else prevPage();
+    }
+    document.removeEventListener('touchend', onEnd);
+  };
+  document.addEventListener('touchend', onEnd);
+}, { passive: true });
+
+/* ============== INIT ============== */
+window.addEventListener('DOMContentLoaded', () => {
+  isMobile = window.innerWidth <= 768;
+  renderLibrary();
+});
+</script>
+
+</body>
+</html>

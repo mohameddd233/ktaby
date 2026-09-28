@@ -4,12 +4,13 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
 <meta name="theme-color" content="#5c3d1f" />
-<title>كتابي — نظام إنشاء الكتب</title>
+<title>كتابي — نظام إنشاء الكتب الاحترافي</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Amiri:wght@400;700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Amiri:wght@400;700&family=Tajawal:wght@400;700&family=Scheherazade+New:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -17,6 +18,7 @@
   :root {
     --primary: #8b5e34;
     --primary-dark: #5c3d1f;
+    --primary-light: #b8895a;
     --accent: #d4a373;
     --bg: #f5f0e8;
     --card: #ffffff;
@@ -25,7 +27,14 @@
     --border: #e0d5c2;
     --danger: #c0392b;
     --success: #27ae60;
+    --info: #3498db;
     --nav-h: 60px;
+    --shadow-sm: 0 2px 8px rgba(139,94,52,0.08);
+    --shadow-md: 0 4px 16px rgba(139,94,52,0.12);
+    --shadow-lg: 0 10px 40px rgba(139,94,52,0.18);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
   }
 
   html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
@@ -38,6 +47,7 @@
     display: flex;
     flex-direction: column;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
 
   .navbar {
@@ -60,7 +70,7 @@
   .btn {
     padding: 12px 18px;
     border: none;
-    border-radius: 10px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     font-family: inherit;
     font-weight: 600;
@@ -73,15 +83,22 @@
     min-height: 44px;
     user-select: none;
     touch-action: manipulation;
+    white-space: nowrap;
   }
   .btn:active { transform: scale(0.97); }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .btn-primary { background: var(--accent); color: var(--primary-dark); }
+  .btn-primary:hover:not(:disabled) { background: #e0b083; }
   .btn-light { background: rgba(255,255,255,0.2); color: white; }
+  .btn-light:hover { background: rgba(255,255,255,0.3); }
   .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+  .btn-outline:hover { background: var(--primary); color: white; }
   .btn-danger { background: var(--danger); color: white; }
   .btn-success { background: var(--success); color: white; }
+  .btn-info { background: var(--info); color: white; }
   .btn-sm { padding: 8px 12px; font-size: 13px; min-height: 38px; }
+  .btn-xs { padding: 6px 10px; font-size: 12px; min-height: 32px; border-radius: 6px; }
+  .btn-icon { padding: 8px; width: 40px; height: 40px; }
 
   .container { max-width: 1300px; margin: 0 auto; padding: 16px; width: 100%; flex: 1; }
 
@@ -104,15 +121,16 @@
 
   .book-card {
     background: var(--card);
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     overflow: hidden;
-    box-shadow: 0 4px 16px rgba(139,94,52,0.12);
-    transition: all 0.2s;
+    box-shadow: var(--shadow-md);
+    transition: all 0.25s;
     display: flex;
     flex-direction: column;
     cursor: pointer;
+    position: relative;
   }
-  .book-card:active { transform: scale(0.98); }
+  .book-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
   .book-cover {
     width: 100%;
     aspect-ratio: 3/4;
@@ -124,6 +142,15 @@
     color: white;
     font-size: 40px;
     font-family: 'Amiri', serif;
+    position: relative;
+    overflow: hidden;
+  }
+  .book-cover::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, rgba(0,0,0,0.15), transparent 15%, transparent 85%, rgba(0,0,0,0.15));
+    pointer-events: none;
   }
   .book-info { padding: 10px; flex: 1; display: flex; flex-direction: column; }
   .book-info h3 {
@@ -135,7 +162,7 @@
     white-space: nowrap;
   }
   .book-info .author { font-size: 12px; color: var(--muted); margin-bottom: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .book-info .meta { font-size: 11px; color: var(--muted); margin-top: auto; }
+  .book-info .meta { font-size: 11px; color: var(--muted); margin-top: auto; display: flex; justify-content: space-between; }
 
   .card-actions {
     display: flex;
@@ -155,9 +182,9 @@
 
   .panel {
     background: var(--card);
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     padding: 16px;
-    box-shadow: 0 4px 16px rgba(139,94,52,0.1);
+    box-shadow: var(--shadow-sm);
     margin-bottom: 14px;
   }
   .panel h3 {
@@ -186,7 +213,7 @@
     width: 100%;
     padding: 12px 14px;
     border: 1.5px solid var(--border);
-    border-radius: 10px;
+    border-radius: var(--radius-sm);
     font-family: inherit;
     font-size: 16px;
     background: #fdfcf9;
@@ -200,22 +227,25 @@
     outline: none;
     border-color: var(--accent);
     background: white;
+    box-shadow: 0 0 0 3px rgba(212,163,115,0.15);
   }
   .form-group textarea { resize: vertical; min-height: 120px; line-height: 1.7; }
 
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-  input[type="color"] { width: 100%; height: 46px; border: 1.5px solid var(--border); border-radius: 10px; cursor: pointer; padding: 4px; background: white; }
+  input[type="color"] { width: 100%; height: 46px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; padding: 4px; background: white; }
   input[type="range"] { width: 100%; accent-color: var(--primary); height: 32px; }
   input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--primary); vertical-align: middle; margin-left: 6px; }
 
   .chapter-item {
     background: #fdfcf9;
     border: 1.5px solid var(--border);
-    border-radius: 10px;
+    border-radius: var(--radius-sm);
     margin-bottom: 10px;
     overflow: hidden;
+    transition: box-shadow 0.2s;
   }
+  .chapter-item:hover { box-shadow: var(--shadow-sm); }
   .chapter-header {
     display: flex;
     justify-content: space-between;
@@ -236,7 +266,7 @@
   .stats-box {
     background: linear-gradient(135deg, #f5efe4, #faf6ef);
     border: 1.5px solid var(--border);
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     padding: 14px;
     margin-bottom: 14px;
   }
@@ -245,7 +275,7 @@
   .stat-item {
     background: white;
     padding: 8px 10px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     font-size: 12px;
     display: flex;
     justify-content: space-between;
@@ -258,7 +288,7 @@
     background: white;
     padding: 30px;
     border-radius: 4px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    box-shadow: var(--shadow-lg);
     margin-bottom: 16px;
     min-height: 400px;
     position: relative;
@@ -288,11 +318,13 @@
     z-index: 1000;
     padding: 16px;
     overflow-y: auto;
+    backdrop-filter: blur(4px);
   }
-  .modal-overlay.active { display: flex; }
+  .modal-overlay.active { display: flex; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   .modal {
     background: white;
-    border-radius: 14px;
+    border-radius: var(--radius-lg);
     max-width: 1200px;
     width: 100%;
     max-height: 94vh;
@@ -322,10 +354,12 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    transition: all 0.2s;
   }
+  .close-btn:hover { background: rgba(0,0,0,0.1); color: var(--primary-dark); }
 
   /* ============================================================
-     📖 BOOK VIEWER — RTL-aware
+     📖 BOOK VIEWER
      ============================================================ */
   .book-viewer {
     display: flex;
@@ -333,6 +367,7 @@
     align-items: center;
     padding: 20px 0;
     min-height: 600px;
+    perspective: 3000px;
   }
 
   .flipbook {
@@ -342,22 +377,40 @@
     margin: 0 auto;
     transform-style: preserve-3d;
     perspective: 2500px;
+    transition: transform 0.5s ease;
   }
 
   .flipbook .leaf {
     position: absolute;
     top: 0;
-    left: 50%;
     width: 50%;
     height: 100%;
-    transform-origin: left center;
     transform-style: preserve-3d;
-    transition: transform 0.9s cubic-bezier(0.645, 0.045, 0.355, 1);
+    transition: transform 1s cubic-bezier(0.645, 0.045, 0.355, 1),
+                opacity 0.5s ease;
     cursor: pointer;
     will-change: transform;
   }
 
-  .flipbook .leaf.flipped {
+  /* LTR */
+  .flipbook[data-dir="ltr"] .leaf {
+    left: 50%;
+    right: auto;
+    transform-origin: left center;
+    transform: rotateY(0deg);
+  }
+  .flipbook[data-dir="ltr"] .leaf.flipped {
+    transform: rotateY(-180deg);
+  }
+
+  /* RTL */
+  .flipbook[data-dir="rtl"] .leaf {
+    right: 50%;
+    left: auto;
+    transform-origin: right center;
+    transform: rotateY(0deg);
+  }
+  .flipbook[data-dir="rtl"] .leaf.flipped {
     transform: rotateY(180deg);
   }
 
@@ -371,34 +424,32 @@
     display: flex;
     flex-direction: column;
     box-shadow: 0 0 20px rgba(0,0,0,0.15);
-    border-radius: 4px 0 0 4px;
   }
 
-  .flipbook .leaf .face.back {
-    transform: rotateY(-180deg);
-    border-radius: 0 4px 4px 0;
-  }
+  .flipbook[data-dir="ltr"] .leaf .face.front { border-radius: 4px 0 0 4px; }
+  .flipbook[data-dir="ltr"] .leaf .face.back  { transform: rotateY(-180deg); border-radius: 0 4px 4px 0; }
+  .flipbook[data-dir="rtl"] .leaf .face.front { border-radius: 0 4px 4px 0; }
+  .flipbook[data-dir="rtl"] .leaf .face.back  { transform: rotateY(180deg); border-radius: 4px 0 0 4px; }
 
   .flipbook .leaf .page-content {
     flex: 1;
     padding: 32px;
-    overflow-y: auto;
+    overflow: hidden;
     line-height: 1.9;
     overflow-wrap: break-word;
+    word-wrap: break-word;
     position: relative;
-  }
-
-  .flipbook .leaf .page-content::-webkit-scrollbar { width: 6px; }
-  .flipbook .leaf .page-content::-webkit-scrollbar-thumb {
-    background: rgba(139,94,52,0.3);
-    border-radius: 3px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    box-sizing: border-box;
   }
 
   .flipbook .leaf .page-header {
     font-size: 11px;
     color: #999;
     text-align: center;
-    padding: 10px 32px 0;
+    padding: 0 0 10px;
     flex-shrink: 0;
   }
 
@@ -406,7 +457,7 @@
     font-size: 11px;
     color: #aaa;
     text-align: center;
-    padding: 8px 32px 12px;
+    padding: 10px 0 0;
     border-top: 1px solid #eee;
     flex-shrink: 0;
   }
@@ -418,8 +469,10 @@
     color: #999;
     pointer-events: none;
   }
-  .flipbook .leaf .face.front .page-num { left: 20px; }
-  .flipbook .leaf .face.back .page-num { right: 20px; }
+  .flipbook[data-dir="ltr"] .leaf .face.front .page-num { left: 20px; }
+  .flipbook[data-dir="ltr"] .leaf .face.back .page-num { right: 20px; }
+  .flipbook[data-dir="rtl"] .leaf .face.front .page-num { right: 20px; }
+  .flipbook[data-dir="rtl"] .leaf .face.back .page-num { left: 20px; }
 
   .flipbook-bg {
     position: absolute;
@@ -461,6 +514,72 @@
     display: block;
   }
 
+  /* ============================================================
+     📕 CLOSED BOOK STATE
+     ============================================================ */
+  .flipbook.closed .leaf:not([data-index="0"]) {
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+  }
+
+  .flipbook.closed .leaf[data-index="0"] {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  /* RTL: الغلاف على اليمين */
+  .flipbook[data-dir="rtl"].closed .leaf[data-index="0"] {
+    right: 50%;
+    left: auto;
+    transform-origin: right center;
+    transform: rotateY(0deg);
+  }
+
+  /* LTR: الغلاف على اليسار */
+  .flipbook[data-dir="ltr"].closed .leaf[data-index="0"] {
+    left: 50%;
+    right: auto;
+    transform-origin: left center;
+    transform: rotateY(0deg);
+  }
+
+  /* ظل على حرف الكتاب المقفول */
+  .flipbook.closed::after {
+    content: '';
+    position: absolute;
+    top: 3%;
+    bottom: 3%;
+    width: 50%;
+    pointer-events: none;
+    z-index: 500;
+    border-radius: inherit;
+  }
+  .flipbook[data-dir="rtl"].closed::after {
+    right: 50%;
+    background: linear-gradient(90deg, rgba(0,0,0,0.5) 0%, transparent 8%);
+  }
+  .flipbook[data-dir="ltr"].closed::after {
+    left: 50%;
+    background: linear-gradient(270deg, rgba(0,0,0,0.5) 0%, transparent 8%);
+  }
+
+  /* نبضة خفيفة */
+  @keyframes coverPulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(0,0,0,0.15); }
+    50% { box-shadow: 0 0 40px rgba(212,163,115,0.5); }
+  }
+
+  .flipbook.closed .leaf[data-index="0"] .face.front {
+    animation: coverPulse 2.5s ease-in-out infinite;
+  }
+
+  .flipbook.closed .leaf[data-index="0"] .face.front:hover {
+    animation: none;
+    box-shadow: 0 0 50px rgba(212,163,115,0.8);
+  }
+
   .flipbook .leaf .face::after {
     content: '';
     position: absolute;
@@ -482,15 +601,24 @@
     min-height: 480px;
   }
   .book-viewer.mobile-mode .flipbook .leaf {
-    left: 0;
     width: 100%;
-    transform-origin: left center;
+  }
+  .book-viewer.mobile-mode .flipbook[data-dir="ltr"] .leaf {
+    left: 0;
+    right: auto;
+  }
+  .book-viewer.mobile-mode .flipbook[data-dir="rtl"] .leaf {
+    right: 0;
+    left: auto;
   }
   .book-viewer.mobile-mode .flipbook .leaf .page-content {
     padding: 20px;
     font-size: 15px;
   }
   .book-viewer.mobile-mode .flipbook-bg::before {
+    display: none;
+  }
+  .book-viewer.mobile-mode .flipbook.closed::after {
     display: none;
   }
 
@@ -502,7 +630,7 @@
     margin-top: 20px;
     flex-wrap: wrap;
   }
-  .viewer-controls .btn { min-width: 120px; }
+  .viewer-controls .btn { min-width: 140px; }
   .viewer-controls .btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
   .page-indicator {
@@ -519,7 +647,7 @@
     aspect-ratio: 3/4;
     max-height: 260px;
     border: 2px dashed var(--border);
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -529,7 +657,9 @@
     overflow: hidden;
     cursor: pointer;
     background: #faf6ef;
+    transition: all 0.2s;
   }
+  .cover-preview:hover { border-color: var(--accent); background: #f5efe4; }
   .cover-preview img { width: 100%; height: 100%; object-fit: cover; }
 
   .site-footer {
@@ -548,14 +678,14 @@
     margin-bottom: 16px;
     background: #f5efe4;
     padding: 4px;
-    border-radius: 10px;
+    border-radius: var(--radius-sm);
     overflow-x: auto;
   }
   .tab {
     flex: 1;
     padding: 10px 8px;
     text-align: center;
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
     font-weight: 600;
     font-size: 12px;
@@ -566,7 +696,10 @@
     justify-content: center;
     gap: 4px;
     white-space: nowrap;
+    transition: all 0.2s;
+    user-select: none;
   }
+  .tab:hover { color: var(--primary-dark); }
   .tab.active { background: white; color: var(--primary-dark); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
 
   .hidden { display: none !important; }
@@ -579,7 +712,7 @@
     background: var(--primary-dark);
     color: white;
     padding: 12px 22px;
-    border-radius: 10px;
+    border-radius: var(--radius-sm);
     font-weight: 600;
     font-size: 14px;
     z-index: 2000;
@@ -589,6 +722,8 @@
     text-align: center;
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { background: var(--success); }
+  .toast.error { background: var(--danger); }
 
   .fab {
     position: fixed;
@@ -607,6 +742,7 @@
     display: none;
     align-items: center;
     justify-content: center;
+    transition: transform 0.15s;
   }
   .fab:active { transform: scale(0.9); }
 
@@ -622,11 +758,51 @@
     gap: 8px;
     z-index: 95;
     box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
-    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   }
   .mobile-bottom-bar .btn { flex: 1; font-size: 12px; padding: 8px 6px; }
 
-  /* شاشة تقدم PDF */
+  .preview-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 10px;
+    background: #faf6ef;
+    border-radius: var(--radius-sm);
+    flex-wrap: wrap;
+  }
+  .preview-indicator {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary-dark);
+    min-width: 80px;
+    text-align: center;
+  }
+  .preview-spread-container {
+    perspective: 2000px;
+  }
+  .preview-spread {
+    gap: 4px;
+    justify-content: center;
+    align-items: stretch;
+    animation: fadeIn 0.3s ease;
+    flex-wrap: nowrap;
+  }
+  .preview-spread-page {
+    flex: 1;
+    max-width: 50%;
+    background: white;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+    overflow: hidden;
+    border-radius: 4px;
+    min-height: 500px;
+    position: relative;
+  }
+  .preview-spread[data-dir="rtl"] { flex-direction: row-reverse; }
+  .preview-spread[data-dir="ltr"] { flex-direction: row; }
+
   .pdf-progress-overlay {
     position: fixed;
     inset: 0;
@@ -644,7 +820,7 @@
     width: 60px;
     height: 60px;
     border: 5px solid rgba(255,255,255,0.2);
-    border-top-color: #d4a373;
+    border-top-color: var(--accent);
     border-radius: 50%;
     animation: pdfspin 1s linear infinite;
   }
@@ -677,6 +853,9 @@
     .modal { max-height: 100vh; height: 100vh; border-radius: 0; padding: 14px; }
     .stats-grid { grid-template-columns: 1fr; }
     .book-viewer { padding: 10px 0; min-height: auto; }
+
+    .preview-spread { flex-direction: column !important; }
+    .preview-spread-page { max-width: 100%; min-height: 400px; }
   }
 
   @media (max-width: 380px) {
@@ -715,8 +894,19 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const STORAGE_KEY = 'kitabi_books';
-const SEED_KEY = 'kitabi_seeded_v2';
+/* ============================================================
+   ⚙️ CONSTANTS & STATE
+   ============================================================ */
+const STORAGE_KEY = 'kitabi_books_v3';
+const SEED_KEY = 'kitabi_seeded_v3';
+const MM_TO_PX = 3.7795;
+
+const PAGE_DIMENSIONS = {
+  'A4':  { width: 210, height: 297 },
+  'A5':  { width: 148, height: 210 },
+  '6x9': { width: 152.4, height: 228.6 }
+};
+
 let currentEditingId = null;
 let currentTab = 'content';
 let viewerBook = null;
@@ -724,16 +914,27 @@ let viewerLeaves = [];
 let viewerLeafIndex = 0;
 let isMobile = window.innerWidth <= 768;
 let saveDebounceTimers = {};
+let _measureCache = new Map();
+let _pagesCache = new Map();
+let _activeKeydownHandler = null;
+let _previewSpreadIndex = 0;
+let _previewSpreadsCount = 0;
+let _isAnimating = false;
 
-/* ============== STORAGE ============== */
+/* ============================================================
+   💾 STORAGE
+   ============================================================ */
 function getBooks() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
   catch { return []; }
 }
 function saveBooks(books) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(books)); }
-  catch (e) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
+    return true;
+  } catch (e) {
     toast('مساحة التخزين ممتلئة! جرّب حذف غلاف كبير.', 'error');
+    return false;
   }
 }
 function getBook(id) { return getBooks().find(b => b.id === id); }
@@ -742,27 +943,63 @@ function upsertBook(book) {
   const idx = books.findIndex(b => b.id === book.id);
   if (idx >= 0) books[idx] = book; else books.unshift(book);
   saveBooks(books);
+  _pagesCache.delete(book.id);
 }
-function deleteBook(id) { saveBooks(getBooks().filter(b => b.id !== id)); }
+function deleteBook(id) {
+  saveBooks(getBooks().filter(b => b.id !== id));
+  _pagesCache.delete(id);
+}
 
-/* ============== UTILS ============== */
-function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+/* ============================================================
+   🛠️ UTILS
+   ============================================================ */
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
 function toast(msg, type='info') {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.style.background = type === 'error' ? '#c0392b' : type === 'success' ? '#27ae60' : '#5c3d1f';
+  t.className = 'toast ' + type;
   t.classList.add('show');
   clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.classList.remove('show'), 2200);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
 }
 function escapeHtml(s='') {
   if (s === null || s === undefined) return '';
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
 }
 function debounce(key, fn, delay = 400) {
   clearTimeout(saveDebounceTimers[key]);
   saveDebounceTimers[key] = setTimeout(fn, delay);
 }
+
+/* ============================================================
+   🌐 LANGUAGE / DIRECTION DETECTION
+   ============================================================ */
+function detectTextDirection(text) {
+  if (!text) return 'rtl';
+  const rtlChars = (text.match(/[\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC]/g) || []).length;
+  const ltrChars = (text.match(/[A-Za-z]/g) || []).length;
+  if (rtlChars === 0 && ltrChars === 0) return 'rtl';
+  return rtlChars >= ltrChars ? 'rtl' : 'ltr';
+}
+
+function detectBookDirection(book) {
+  const d = book.design || {};
+  if (d.autoDirection === false && d.direction) return d.direction;
+  const sample = [
+    book.title || '',
+    book.author || '',
+    ...(book.chapters || []).slice(0, 3).map(c => (c.content || '').slice(0, 300))
+  ].join(' ');
+  return detectTextDirection(sample);
+}
+
+/* ============================================================
+   📐 DESIGN DEFAULTS
+   ============================================================ */
 function defaultDesign() {
   return {
     pageColor: '#ffffff',
@@ -774,11 +1011,13 @@ function defaultDesign() {
     pageSize: 'A5',
     margin: 40,
     direction: 'rtl',
+    autoDirection: true,
     headerText: '',
     footerText: 'Designed and Programming by Mohamed Ali',
     showPageNumbers: true
   };
 }
+
 function newBook() {
   return {
     id: uid(),
@@ -788,6 +1027,7 @@ function newBook() {
     category: '',
     isbn: '',
     cover: '',
+    backCover: '',
     chapters: [{ title: 'الفصل الأول', content: '', order: 0 }],
     design: defaultDesign(),
     createdAt: Date.now(),
@@ -796,44 +1036,24 @@ function newBook() {
 }
 
 /* ============================================================
-   📚 الكتاب الافتراضي: رواية "زها"
+   📖 SEED BOOK
    ============================================================ */
 function getDefaultBook() {
   return {
     id: 'zaha-default-001',
     title: 'زها',
     author: 'زينب هشام',
-    description: 'رواية عن فتاة تُدعى إيلاف، تعيش في بريطانيا بعد فقدان والدتها، تبحث عن ذاتها بين رفض والدها لحلمها في دراسة الطب، ورسائل غامضة تصلها من مجهول، ورجل بقناع جلدي يظهر في كل منعطف من حياتها. رواية عن الحب، والفقد، والبحث عن الوطن داخل الذات.',
+    description: 'رواية عن فتاة تُدعى إيلاف، تعيش في بريطانيا بعد فقدان والدتها، تبحث عن ذاتها بين رفض والدها لحلمها في دراسة الطب، ورسائل غامضة تصلها من مجهول، ورجل بقناع جلدي يظهر في كل منعطف من حياتها.',
     category: 'رواية',
     isbn: '',
     cover: '',
+    backCover: '',
     chapters: [
       { title: 'إهداء', content: 'إلى من أهدى لي شغفًا تصمدُ أمامه حروفي، من شدَّ على يدي مُشجعًا وربَت على قلبي ببسمةٍ وكلمةٍ مُلهمة، حتمًا ستجد نفسكَ بين سطوري.', order: 0 },
-      { title: 'مقدمة', content: 'بين صفحاتٍ مُزقت وأوراقٍ بَقيَت، تمتدُ الهمساتُ كصدىً عالٍ في مكانٍ مُنزوٍ، تُجسد من عُمقِ الظلامِ مشهدًا، تتلو على كلِّ مارٍ مآسي الزمن، عن أثرٍ بقي مع تلاشي الذكريات، غُبارٌ يملأه كأنه يكسيه من صعيقِ البردِ، لكنه ليس مجرد تُراب يتناثرُ مع همساتِ الريح العاتية، بل أصابعٍ احتضنت الصفحات رُجافها حتى غادرت، مُتهالكٌ بهيئةٍ تسردُ عليكَ لحظاتِ الشجن.\n\nفما آن لإنسٍ أن يستمعَ لتلاوةٍ أقسى من صُلبِ الحجر؟\n\nأما آن لكَ أيها القارئ أن تسمحَ لذاتك الغوص لأعماقه والاستماع لكلٍّ صوتٍ يُناجي داخله؟\n\nحين تسقُط الأقنعة، وتشتعلُ الأضواء بوميضٍ عالٍ، حينها تُدرك الحقيقة، تُبصر ما توارى خلفَ كلِّ قناعٍ جانبك، وترى أنكَ كنتَ البطل منذُ البداية؛ بطل تلك المسرحية.', order: 1 },
-      { title: 'الفصل الأول: سِراج', content: 'بين أصواتِ رذاذُ المطر ورائحةُ المخبوزات التي تجتازُ المكان، جلست كما عاهدت ذاتها في ركنٍ بعيدٍ، تنظرُ لكلِّ مارٍ لعلها تجد ما يُلهمها لحياةٍ جديدة.\n\nلكن لا شيء يُعيد إحياء ما مات داخلها.\n\nلملمت كل أدواتها راغبةً في الخروج، لكن أوقفتها يدٌ تَشدُ على كتفيها، التفتت تنظر..\n\n"سِراج!"\n\nتبسم بإشراقٍ في وجهها مُعانقًا لها، تضمه بشوقٍ ويفعلُ المثل.\n\n"اشتقتُ لَكِ" نبس هامسًا لها وهو يُمسد فوق خصلاتها.\n\n"متى عُدت؟" سألته وهي تسحبه للجلوس أمامها.\n\n"الأهم أنني عدت إليكِ"\n\n"ماذا عنهَا؟"\n\nتنهد بيأسٍ مُمسدًا فوق يديها.\n\n"إيلاف.. لقد عاهدتيني على تخطي ذلك، ليس وكأنها ستُغير ما حُفر داخلها لسنواتٍ، لكن أنتِ يجب أن تتحرري مما تحبسين نفسك داخله!"\n\nوهي أومأت له بصمتٍ، لم تشكُ عدم قدرتها على التحرر، ولم تبكِ تفريغًا لآلامها، بل ابتسمت له كي لا تُثقل كاهله.\n\nلكنه يُدرك كل شيء.', order: 2 },
-      { title: 'الفصل الثاني: بلا مأوى', content: 'تسيرُ بين الطُرقاتِ بلا وجهةٌ، لا مأوى لها في الوقتِ الراهن.. كادت أن تصتدم في عربةٍ لولا يد جذبتها.\n\n"إيلاف! رجاءً انتبهي"\n\n"شردتُ فقط، لِمَ لست في المقهى؟"\n\n"قررتُ السير رفقتكِ، أتُمانعين؟"\n\n"متى ستعود لها مُجددًا؟"\n\n"قريبًا، وددتُ أن آتي لتفقد المقهى والأهم تفقدكِ"\n\n"أنتِ أين ستمكثين الآن؟"\n\n"لا أعلم.. حينما أصبحت كارو بخير سررتُ لذلك، لكن جزءًا مني توجس مما سيلحق بي"\n\nنبس بصوتٍ خفيضٍ: "تعلمين منزلي مفتوحًا لكِ"\n\n"دعنا لا نتطرق لذلك، ليس وكأنني لم أتخطَ لكن راحتي لن تكون هناك بينما أنت معها"\n\n"ما رأيكِ في محاولةٍ أخرى مع والدك؟"\n\nنفت برأسها مُمسكةً بيديه: "سأسكن في غرفةٍ ما ليومان وبعدها سأجد حلًا مناسبًا"\n\nتنهد راجعًا بجذعه على مقعدِ الحديقةِ بقلةِ حيلة.\n\nهي كما هي مهما توالت الأيام، تضع الجميع في المرتبةِ الأولى ومن ثم نفسها.', order: 3 },
-      { title: 'الفصل الثالث: السيدة كارو', content: 'أوشكت الشمس على الغروبِ وهي ما زالت تجلس بعدما رَحل سِراج، لَملمت نفسها تذهب لمنزل السيدة كارو.\n\nتلك التي كانت تعتني بها هذه الفترة، هكذا اكتسبت بعض النقود للسعي وراء حُلمها.\n\n"لقد عُدت" فاهت بها ترفع مستوى صوتها حينما دَلفت للمنزل.\n\nوبينما تخلع حذائها اِلتفتت بعينيها تبحث عن السيدة، كانت تجلس أمام التلفاز.\n\n"تقدمي يا ابنتي، حكتُ لكِ شيئًا جديدًا" نَبست السيدة.\n\n"كم أنا محظوظة يا ترى! إنها قُبعةٌ رائعة، شكرًا لكِ"\n\n"هل أخذتِ دوائكِ؟"\n\nأومأت السيدة لها بهدوء ونظرها نحو التلفاز.\n\n"جئتُ اليوم لتوديعكِ وإعطاءكِ مفتاح المنزل، سُررتُ حقًا بقضاء تلك الشهور معكِ"\n\nنظرت لها السيدة وعينيها بدأت تترقق بالدموع، اقتربت إيلاف تحتضنها بهدوء.\n\n"لِمَ تبكين؟ إن كنت مكانكِ لابتسمتُ لاكتمالِ شفائي"\n\n"لكني أحببتُكِ وأحببتُ وجودكِ، أغدقتيني بالحب والعطاء وكأنكِ ابنتي!"\n\n"سأزوركِ بين الحين والآخر، أنتِ فقط اهتمي لصحتكِ دائمًا لأجلي"\n\nهكذا القدر يجمعنا بأشخاصٍ تهرعُ إليهم قلوبُنا، ثم يحيلُ بيننا الطرق.', order: 4 },
-      { title: 'الفصل الرابع: فلورا', content: 'تنهدت تُغلق الباب خلفها.. وكادت أن تخطو خطوة نحو أي طريقٍ يوصلها لفندقٍ مناسب ليومين أو ربما ثلاثة، فلا رغبة لديها للعودة إلى الديار.\n\n"إيلاف!" صوتٌ مألوفٌ اخترق دائرتها.\n\n"فلورا!"\n\n"اشتقتُ لكِ يا فتاة" نبست فلورا تُعانقها.\n\nصديقتها منذ المرحلة الثانوية، لكن فرقت الأيام بينهما.\n\n"منذ متى وأنتِ في بريطانيا؟"\n\n"جئتُ من أسبوعين"\n\n"إلى أين؟"\n\n"ذاهبة للمنزل" كذبةٌ بيضاء.\n\nتجعد حاجبيها باستغرابٍ وهي تنظر للحقيبة بجانبها.\n\n"لكن هذا ليس الطريق، ألا تمكثين مع السيدة إليانور؟"\n\n"ذلك شيء يطول شرحه، الأهم أنني الآن في رحلةِ البحث عن غرفةٍ ملائمةٍ لسببٍ ما"\n\n"لدي صديقة كانت تبحثُ عن مستأجر لغرفةٍ في منزلها، يمكنني التحدث معها لأجلكِ إن أردتِ"\n\n"شكرًا لكِ، سأمكث في فندقٍ ما ريثما ألتحقُ بالجامعة"\n\n"ألستِ فيها بالفعل؟ لقد كان مجموعكِ عاليًا حسبما أتذكر"\n\nوهُنا بهتت ملامحها بشكلٍ مُبالغٍ.\n\n"لا بأس صدقيني، ستُحب وجودكِ، تعالي معي لنذهب لها الآن".\n\n"الآن؟! لا أودُّ حقًا لستُ أثق في المبيت عند أحدٍ"\n\n"ألا تثقين بي؟"\n\nلكن تنهدت إيلاف بقلةِ حيلة تجرُّ حقيبتها خلفها.\n\n"لنذهب."', order: 5 },
-      { title: 'الفصل الخامس: قصر مارلين', content: 'تدفعنا الحياة لطرقٍ لا ندرك نهايتها.\n\n-إيلاف-\n\nذهبتُ معها كما رغبت ولعل هنالك غرفة تناسبني لبضعِ ليالٍ.\n\n"وصلنا!" نبست بعدما توقف فجأة.\n\nنظرتُ حولي أبحث عن منزلٍ ما أو حتى مسكن، لكن لا يوجد.\n\n"ها هو، انظري" نبست تُشير نحو رُكنٍ ما.\n\nكيف تُسمي ذلك منزل! لم يكن بيتًا حتى كما توقعت، بل قصرًا تفوح منه رائحة الثراء.\n\n"تقصدين ذلك القصر، حقًّا؟"\n\nأومأت برأسها ببساطة، فبدأ القلق يتسلل لقلبي.\n\n"لِمَ قد ترغب صاحبة القصر في تأجير غرفة؟"\n\n"لا علم لي بالتفاصيل، لكن لا ضرر من التجربة، إنها صديقتي"\n\nلكنها لا تعلم أن ذلك موطن القلق.\n\n"تعالي" نبست بعدما ترجلت من السيارة.\n\nسِرنا سويًا نحو المكان، الحديقة ليست كبيرة لكن قطعنا نفسًا طويلًا لنصل للباب.\n\nطرقت هي الباب وثغرها يكادُ يتوسع من كثرةِ التبسُم، فتحت لنا سيدة في عقدها السادس ربما، استقبلتنا للداخل.\n\nلم أملك طاقةً لتحليل كل نقطةٍ بعيني، لكنه من الداخل بارد، أرسل في جسدي شعورًا من التردد.', order: 6 },
-      { title: 'الفصل السادس: مارلين', content: 'نجلسُ وبين أيدينا كوب من المشروب الساخن.\n\nوقطع نظراتي نحو نيران المدفأة صوت حذاء عالٍ يطرقُ على الأرضِ مقتربًا نحونا.\n\nاقتربت امرأة وكانت صورةً من الجمال، رقيقة، ابتسامتها دافئة على القلب.\n\nأظن أنها في عقدها الثالث.\n\n"تلك إيلَاف صديقتي من المرحلة الثانوية، أخبرتها عن الغُرفة التي تستأجريها."\n\n"أهلًا بكِ، أنا مارلين"\n\nابتسمتُ لها أهزُ رأسي بترحيب، وبلا سبب قد مالَ قلبي لها.\n\n"سأذهب الآن لأنَّ والدتي تنتظرني" قاطعتها فلورا وذهبت.\n\n"حسنًا إذًا يُمكنني أن أُرشدكِ للغرفة"\n\n"ألن نتفقُ أولًا على التفاصيل؟ الأموال مثلًا"\n\n"لا تتعجلي، غدًا نتحدثُ في كل شيء، ظاهرٌ عليكِ الإرهاق وأنا أيضًا أفتقدُ فراشي"\n\nابتسمتُ لها أومئ بهدوء، وهي وقفت تسيرُ فتبعتُها حتى وصلنا للغرفةِ المنشودة.\n\n"أتمنى أن تنال اعجابكِ"\n\n"رائعة!"\n\n"سُررتُ بذلك، سأذهب للنومِ الآن إن أردتِ شيئًا يكفي أن تطرقي باب غُرفتي تلك التي بجانبك"\n\nودعتني بابتسامةٍ بسيطة ثم ذهبت مُغلقة الباب خلفها، فشرعتُ أتأمل الغرفة بعينٍ مُتمعنةٍ.\n\nلكن ما لفت انتباهي وجود غُبار بسيط على ذلك المكتب، وكأنه مهجورٌ منذ فترة عكس الغرفة.', order: 7 },
-      { title: 'الفصل السابع: أول ليلة', content: 'لم أشعرُ بنفسي إلا وأنا أستيقظُ على صوتِ ارتطام صاخب.\n\nلا أعرف متى وكيف نمتُ، بل ظننتُ أن النومَ لن يزور أجفاني بسبب القلق وتغيير المكان، لكن عكسما توقعتُ نمتُ بعمقٍ غريب، وكأن المكان مألوفٌ.\n\nتذكرتُ صوت الارتطام الذي تسبب في فزعي، نزلتُ وقد كان المكان مُعتم، ظننتُ الصباح قد حلَّ وإذ بها الساعة الخامسة صباحًا فقط.\n\nهنالك صوت خلفي، خشخشات غير مفهومة وصوت بدا اي كخطواتٍ حريصة.. نبضات قلبي بدأت تتزايدُ وعقلي يرفضُ أن يأمر جسدي بالالتفات.\n\nكان ذلك كافيًا لأهرول سريعًا نحو الغرفة دون النظر خلفي، بل وأغلقتُ على نفسي وشددتُ على الغطاء لأخفي نفسي.\n\nوالآن بدأ الندم يصفعُ عقلي من جميع الجهات.', order: 8 },
-      { title: 'الفصل الثامن: مارغريت وروز', content: 'استيقظتُ على طرقاتٍ خفيضةٍ لباب الغرفة.\n\n"إيلاف؟"\n\nسمعتُ الطارق يُنادي باسمي، لكن ذلك ليس صوت مارلين.\n\n"حسنًا آتيه"\n\nنهضتُ سريعًا أُهندم خُصلاتي ثم فتحتُ الغرفةَ، إنها نفس المرأة من الأمسِ.\n\n"صباح الخير، أعتذر إن كنتُ أزعجتكِ، لكن الفطور جاهز ومارلين تنتظرُ بالأسفل"\n\n"لا بأس، سأغسل وجهي وأنزل"\n\nذهبتُ للداخل نحو المرحاض وهي دخلت خلفي لتوضيب الفراش.\n\nبدلتُ ملابسي لرداءٍ وردي لونه مُريح للعين.\n\n"صباح الخير" نبستُ أجذب انتباه مارلين.\n\n"صباح الخير لكِ أيضًا"\n\nجلستُ أمامها على المائدة.\n\n"أتمنى أن تكوني تأقلمتِ مع الغرفة"\n\n"آه قليلًا، مع الوقت سأعتاد بالفعل، لكنني لا أنوي البقاء كثيرًا فقط لحينما أُقدم في جامعتي"\n\n"كم عُمركِ؟"\n\n"واحد وعشرون"\n\n"ماذا عنكِ؟"\n\n"أنا في الرابعة والثلاثون"\n\n"تمزحين؟"\n\nهي ضحكت بخفةٍ على تعابير وجهي المندهشة بالتأكيد، تبدو أصغر من ذلك بكثير!\n\n"أبدو أصغر قليلًا، أنا ممن يهتمون بالعناية الشديدة"\n\n"هذا رائع، في النهاية نحن من نبقى لأنفسنا"\n\nهزت رأسها دلالةً على موافقتها لحديثي.', order: 9 },
-      { title: 'الفصل التاسع: الظرف الأول', content: 'جلستُ على المكتب أصبُّ تركيزي على الورق الأبيض.\n\nكتبتُ عن رغبتي لليوم، عن خوفي من الغد، عمَّ يُطاردني من الأمسِ، وفي كلِّ سطرٍ كنتُ ألمحُ آثارًا لخدوشِ قلبي.\n\nوقبل أن تُغلقَ يداي الدفتر، سمعتُ صوت ورقةٍ تمرُ من أسفلِ عقب الباب.\n\nظننتُ أنني أتوهم لكني رأيتُ ظرفًا بالفعل!\n\nأليس من المُفترض أن الجميع في الخارج الآن؟\n\nحزمتُ أمري ووقفتُ أستند على قدمي بترددٍ..\n\nفتحتُ طرف الباب بهدوء ولا صوت سوى أنفاسي، ويدي الأخرى تشدُّ على الظرفِ حتى تجعدت أطرافه.. لكن لا شيء!\n\nنزلتُ للأسفل أُفتشُ عن أي كائن حي لأطمئن، وكما توقعت.. لا يوجد.\n\nدبَّ الذعر في قلبي لكن حاولتُ الثبات.\n\nولم يأتِ في بالي شيئًا سوى أن أفتحَ ذلك الظرف بيدين مُرتعشة بخفةٍ.\n\n^ المُبصر ينجو كغريقٍ اعتصم بقطعةِ خشبٍ في بحرٍ هائجٍ، أما المُصلح فيمدُّها للآخرين، فيغدو وحده سفينةً، ويغدو الجميعُ ناجين. ^\n\nتلك الكلمات..\n\nلا أفهمُ شيئًا، ما المعنى وراءها؟ بل من صاحبها؟\n\nالخط مُستقيمًا، مُرتبًا، وكأن كاتبها خطها بيدٍ واثقة، بيقينٍ تام.\n\nهل أنا المنشودة بتلك الرسالة؟\n\nسأُجن حتمًا من التفكير!', order: 10 },
-      { title: 'الفصل العاشر: كولن', content: 'خرجتُ مُغلقة الباب من خلفي، أسحبُ كمية كبيرة من الهواء، لعلها تُطهر داخلي.\n\nخطوتُ نحو الحديقة لأخرج من الباب الرئيسي، لكن أوقفني صوتٌ خشنٌ يصيحُ بِـ: "يا آنسة!"\n\nاِلتفتُ باستغرابٍ لأجدَ شابًا ثلاثيني حسب ظني.\n\n"أنا كولين أعملُ هُنا كحارثٍ، أنتِ إيلاف إذًا.. أخبرتني مارلين عنكِ قبل ذهابها"\n\n"آه عُذرًا، لن أُعرف عن نفسي إذًا بما أنك تعرفني، لكني لم أراكَ أمسًا"\n\n"لقد كنتُ في أجازةٍ طويلةٍ، قطعتها السيدة مارلين اليوم"\n\nأومأت برأسي ألوح له لكي أذهب، لكن لِمَ فجاءة أعادته للعمل؟ هل تلك صدفة أم أن وجودي له دخل في هذا؟\n\nوالأسوأ أن وجوده اليوم يُشير لعدم دخول أحد البيت من بعد خروجهم.\n\nوذلك يُشير لأن صاحب الظرف كان معنا في البيتِ طوال الوقت!\n\nلا! بالتأكيد لا.', order: 11 },
-      { title: 'الفصل الحادي عشر: الجامعة', content: 'طوال الطريق أُحاول أن أبعد عن عقلي التفكير في كل الاحتمالات السيئة، لكن الفضول يتغذى عليَّ بشكلٍ مُرهق.\n\nوالآن وصلتُ لوجهتي.. الجامعة.\n\nرفعتُ رأسي أنظرُ لها بآمالٍ مُشتعلةٍ إلى الآن فقط.\n\nكنتُ أقدم خطوة وأُؤخر أخرى، أخشى أن أرى أحلامي تتهدَّمُ أمام مرآي للمرةِ الثالثة.\n\nلكن الأحلام تطلبُ الشجاعة، لكي تقفُ حينما تَسقُط.\n\nأدليتُ برغبتي لموظفي الأمن فأذنوا لي بالدخول، لكن لم تفوتني نظرة الاحتقار في عينيهم.\n\n"أسمعُكِ إيلاف"\n\n"أرغبُ بتقديم أوراقي هُنا في الجامعة و…"\n\n"وكما أعلمُ مجموعكِ مُذهل بل وأنتِ الأولى، وستسعين دائمًا للأفضل يكفي أن أعطيكِ فرصةً فقط."\n\nصمتُ حينما أكمَل هو بدلًا مني.\n\n"لكن انظري للوجه الآخر للحقيقة، الجامعة تقبل خمسةً وعشرين امرأة فقط، الأولوية للسُلطة ثم المكانة الاجتماعية ثم دعم الأسرة، ناهيكِ عن رفض والدكِ، لكن طلبكِ مرفوض للمرةِ الثالثة"\n\n"فُرصةٌ واحدةٌ فقط، على الأقل خذ مني الأوراق لينظرَ المجلس فيها!"\n\n"لا أستطيع إلا في حالةٍ واحدة."\n\n"أن يرضخ والدكِ لرغبتكِ ويُوقع ورقةَ الموافقة"\n\nإنه مريضٌ بلا شك.\n\nاختنقتُ لدرجةِ أنَّ المكتبَ لم يسعني، فخرجتُ مُسرعةً.\n\nأريدُ أن أبكي حقًا..', order: 12 },
-      { title: 'الفصل الثاني عشر: سراج والغضب', content: 'أجلسُ في المكتبة المفضلة لدي، أُفكر ماذا قد أفعل.\n\nووجدتُ نفسي أُخرجُ الظرفَ من حقيبتي، لا أعلمُ حتى لِمَ ما زال بحوزتي.\n\n"إيلاف"\n\nإنه سِراج.. رفعتُ عيني من الظرفِ أدثره في الحقيبة سريعًا.\n\n"أين كنتِ! كدتُ أموت قلقًا، ألم نتفق على أن تأتي بعدما تودعين السيدة كارو؟"\n\nلقد نسيتُ تمامًا!\n\n"آسفة حقًا تذكرتُ للتو!"\n\nلكنه حركَ وجهه الجهة الأخرى.\n\n"لا تغضب فورًا! توالت الأحداث فنسيت، لن تحدث مرة أخرى أعدكَ"\n\n"أين ذهبتِ؟ ظللتُ أبحثُ عنكِ هنا وفي الجوار كالمجنون"\n\n"سأخبرك لكن عاهدني ألا تغضب."\n\n"أعدُكِ"\n\n"أنتِ فقدتِ عقلكِ بالتأكيد!" صرخ في وجهي.\n\n"آوتش! أنتَ كاذب أين وعدك منذُ قليل!"\n\n"ماذا يعني المكوث في منزل غرباء؟"\n\n"كنتُ مُضطرة لذلك!"\n\n"أنا فقط لا أعلم لِمَ تفعلين هذا، أخبرتك بأن منزلي لكِ وقتما تُريدي"\n\n"رجاءً دعنا لا نتطرق لهذا الآن."\n\nربت على خُصلاتي يبتسم لي بمواساة.\n\n"أمس صادفتُ والدكِ"\n\nوأنا لم أستطع كبح تعابير وجهي.\n\n"أخبرني أنه يُودُّ التحدث معكِ في أمرٍ ضروري"\n\n"سأذهب غدًا"\n\n"تتحدثين بجدية؟"\n\n"أرغبُ بالقدوم معكِ"\n\n"سنرى غدًا"\n\n"سأوصلكِ لأرى الوضع بنفسي"', order: 13 },
-      { title: 'الفصل الثالث عشر: الظرف الثاني', content: 'أجلس أمام المكتبِ وبحوزتي ورقة بيضاء فارغة، أُحاولُ أن أعصرَ عقلي لأجد إجابة مُناسبة.\n\nفالأمرُ أصبح ضروريًا بالنسبةِ إلي.. يجب علي معرفة المُرسِل.\n\nأشعر وكأن معنا شخصًا ثالثًا لا اعلم مارلين عنه شيئًا.\n\nربما قاتل مُتسلسل يتربص بي، مُتشرد يتخذُ من المنزلِ مأوى!\n\nنفضتُ تلك الأفكار السوداوية.\n\nلا أُصدق أنني أكتبُ رسالةً بدلًا من الذهاب للنوم.\n\n—إن كان البيتُ قد ضلَّ طريقَهُ إليك، فهذا ليس لأنك لا تستحق الاستقرار، بل لأن غربتك أعمق من أن تستوعبها جغرافية الأرض، في غياب الأوطان تذكر أنك لست وحدك في هذا التيه.\n\nطويتُ الورقةَ ثم أخرجتُ نصفها للخارجِ.\n\nتسطحتُ على الفراش ونظري مُعلَّق على نصفها الآخر، أُراقب متى ستنسحب.', order: 14 },
-      { title: 'الفصل الرابع عشر: جولة في القصر', content: 'بدأنا بالمطبخِ، لم أتوقع أنها قد تهتم بشيء كهذا.\n\n"لن أُريكِ غُرفة الطعام لأننا كنا هناك بالفعل"\n\nسِرتُ خلفها داخل غُرفة أسفل السلمِ.\n\n"تلك غُرفة زائدة نستعملها للأشياء التي لا نستخدمها"\n\nنستعملها؟ إنها تستخدم صفة الجمع الآن!\n\nتجولتُ بعيني في الغرفةِ، هي الشيء الوحيد الغير مُرتب في ذلك المنزل.\n\nخرجنا مُغلقةً الباب خلفها، ثم اتجهت نحو الرُكن الأيمن، ذلك الباب كان كبيرًا بعض الشيء.\n\n"مُستعدة؟"\n\n"أظنُّ أنها قد تُعجبك"\n\nنظرتُ حولي أتمعنُ النظر في تلك اللوحة الفنية، لقد كانت مكتبة، عالية للغاية بأرفُفٍ يصعُب عدها.\n\nلم أستطع كبح ابتسامتي من الاتساع، ذلك مشهد أحلامي.\n\n"يُمكنكِ أخذ ما تشائي من هُنا"\n\n"أحبها بالفعل، لكن أتحُبيها أنتِ لتلك الدرجة؟"\n\nلكن ملامح السعادة انقشعت من وجهها واحتلتُها ملامح الحزن والشرود.\n\n"هل أنتِ بخير؟"\n\n"دعينا نُكمل جولتنا"', order: 15 },
-      { title: 'الفصل الخامس عشر: لقاء الأب', content: 'خرجتُ صباحًا دون أن تستيقظ مارلين أو السيدة مارغريت.\n\nما زالت المنطقة كما هي، هواؤها خانق.\n\nسِرتُ على قدمي حتى وقفتُ أمام المنزل، تنهدتُ حتى شعرتُ بأنني كدتُ أكسر قفصي الصدري.\n\n"إيلاف؟" جاءني صوته مُتسألًا.\n\n"سِراج أخبرني برغبتك للقاءنا"\n\nأومأ دون أن يُعلِّق، أزاح لي الطريق للداخل.\n\n"افتقدتُكِ يا ابنة زوجي"\n\nصوتها يجعلني أنفُر من كل شيء.\n\nتجاهلتُها حتى جاء أبي..\n\n"ستصمتون كثيرًا؟ أخبرها يا أرلوند عن سبب وجودها هنا"\n\n"جاءكِ خاطبٌ وأنا وافقت"\n\n"عُذرًا؟"\n\nأظن أنني سمعتُ خاطئًا!\n\n"لقد قال جاءكِ خاطب، كان صوته واضحًا بالفعل"\n\nلقد وافق!\n\n"ما معنى وافقت! لا أريد"\n\n"والدكِ من يُقرر!"\n\n"نهايتُكِ منزل زوجكِ، لذلك توقفي عن كونكِ فتاة مزعجة وحالمة بلا نتيجة!"\n\n"أنا لن أتوقف، وأنت تعلمُ هذا جيدًا"\n\n"الزواج سيسلُب مني حق الدراسة"\n\n"لنعقدُ صفقةً إذًا، توقيعكِ على ورقة زواجكِ مُقابل توقيعي ورقة تعليمكِ"\n\nصفقة؟ أنا في نظره مجرد صفقة؟\n\nاندفعت الدماء لعروقي، أهممتُ واقفةً دون انتظار رده.\n\nلن أجعلهم يستغلون نقطة ضعفي بالفعل.\n\nلكنها سبقتني تقف خلف الباب تمنعني من العبور!\n\n"اذهبي لغُرفتكِ إيلاف"\n\nإنهم يحتجزوني بالفعل!', order: 16 },
-      { title: 'الفصل السادس عشر: الظرف في بيت الأب', content: 'أجلسُ في تلك الغرفة.\n\nوضعتُ يدي على قلبي لعلي أُخفف من حدةِ خفقاته.\n\nسمعتُ أصوات طرقاتٍ على النافذةِ.. ذهبتُ لأُلقي نظرةً، لكن لا شيء.\n\nأغلقتُها وكدتُ أذهب للجلوس لكن عاد صوت الطرقات مُجددًا.\n\nوجدتُ ظرف!\n\nأمسكتُ بنفسي وأنا أبتسم غفلةً!\n\nلكن.. للتو استوعبت.\n\nوجوده هنا يعني أن هُناك من يُراقبني، الأمر ليس مُتعلِّقًا بمنزلِ مارلين، بل بي أنا!\n\nفتحته سريعًا تلك المرة.\n\n^اليوم يوم اللقاء..\nأنا بيتٌ بلا سقف، مسرح بلا مُمثلين، تُقادُ فيّ المعارك يوميًا دون قتلى، تسيلُ فيّ الدماء دون ألم، يموتُ فيّ الملوك والجنود واقفين، وتبكي فيّ القلاع إذا حُوصرت، أتحركُ في مساحاتٍ ضيقة، لكني أهزُ عروشًا.^\n\nيوم اللقاء؟ ما معنى هذا؟\n\nهل يودُّ أن نلتقي!\n\nبيت بلا سقف\n\nما هو البيت الذي لا سقف له!', order: 17 },
-      { title: 'الفصل السابع عشر: البيت بلا سقف', content: 'أقفُ بجانبِ سماعة الهاتف، أعبثُ بالأسلاك لأُشتت تفكيري مع التوتر.\n\nلم تأتِ لعقلي فكرة أفضل من مُهاتفة سِراج.\n\n"سِراج، إنها أنا"\n\n"إيلَاف! أنتِ هُناك؟"\n\n"لقد رأيتُ لُغزًا أُريدكَ أن تُفككه لي"\n\n"تُهاتفيني لأجل لغز؟" سمعتُ صوت قهقهته.\n\n"بيت بلا سقف ومسرح دون ممثلين، شيء تُقام فيه المعارك يوميًا دون قتلى"\n\n"ما هذا، لا أفهم شيئًا"\n\nثم أكمل يصيح على أحدٍ بجانبه: "أنتَ تغُش!"\n\n"ألعبُ طاولة شطرنج، كدتُ أفوز لكنه يخُم!"\n\nلكن! شطرنج؟\n\nجنود، معركة دون قتلى، مساحات ضيقة!\n\nفمُربع رُقعة الشطرنج هو البيت الذي لا سقف له، القطع تتحركُ عليها كالمُمثلين على المسرح.\n\nلقد فعلتُها!\n\n"ها هو!" حدثتُ نفسي بحماسٍ.\n\nاسمه مُربع الشطرنج، إنه في ساحة المدينة الرئيسية.\n\nسَمعتُ صوت إطار سيارة.. أتمنى ألا يكون ما في عقلي!', order: 18 },
-      { title: 'الفصل الثامن عشر: آرثر وسوفيا', content: 'مع اقتراب خطواتي لغُرفةِ الجلوس تدفقت أصواتَ الترحيب إلى أُذنيَّ.\n\nخطوتُ للداخِل بعدما جلس كلاهِما.. أول وجه قابلني كان هو ذلك الشاب.\n\n"تِلك السيدة سوفيا، و"\n\n"آرثر"\n\nتبادلتُ معهم النظرات بصمتٍ، وجلستُ أمام تلك المرأة، وجهها يبعثُ مشاعر مُريبة في النفسِ.\n\nأما هو فقد كان شابًا في أواخرِ العشرين، طويل القامة، عيناه بنيَّةٌ كما شعره.\n\n"إيلَاف.. ألن تُحضري قهوة لضيوفنا؟"\n\nنهضتُ بصمتٍ لأُحضرها لهم بالفعل.\n\n"لنتركهُم سويًا"\n\n"ما السرُّ وراء رغبتكم تلك؟"\n\nلكن عكس ما توقعتُ لمحتُ على وجهه تعبيرًا مُتسليًا.\n\n"إن أخبرتُكِ فحينها لن يكون سِرًا"\n\n"الحياة لا تمنحنا خيارات.. هي فقط تضع أمامنا مهزلتين، وتنظر إلينا لنختار أي العرضين نودُّ أن نُمثِلَ"\n\n"ماذا تقصد؟"\n\nلكنه لم يُجب، وقبل أن أُعاودَ طرح سؤالي نهض يذهب إليهم في الداخل.', order: 19 },
-      { title: 'الفصل التاسع عشر: ليلة الشطرنج', content: 'استغليتُ لحظةَ انشغالهم بتوديع الرجل والمرأة في الأسفل وتسلقتُ نافذةَ غُرفتي سريعًا أقفزُ للأسفل.\n\n"آه!" حاولتُ كتم صوتي.\n\nلكن قدمي تؤلمني.\n\nنويتُ التوجه لذلك المكان، بداخلي خوفٌ يكفي ويفيض.\n\nنظرتُ حولي أطرفُ بعيني، الليل قد حلَّ والرعب ازداد، لا أرى شيء سوى ساحةٍ بيضاء وسوداء، إنها ساحة الشطرنج.\n\nسمعتُ أصوات أقدامٍ كثيرةٍ تضربُ على الأرضِ.. تلقائيًا وجدتُ نفسي أُخفي جسدي خلف شجرةٍ ما.\n\nرجالٌ كثيرة، ثلاثة أو أربعة، يقفون مُتقاربين.\n\nأمامهم رجل مُلثم يقفُ بثباتٍ يُحسد عليه..\n\n"لماذا توقفت عن الجري؟ أتخالُ أنكَ تستطيع مُجابهتنا"\n\n"لم أخرُج للجري، بل الاستدراج"\n\n"ونجحتُ في ذلك، الدليل وقُوفكَ أمامي الآن"\n\nوضعتُ يدي على فمي أُحاول منع شهقاتي.\n\n"من هُناك؟"\n\nيا إلهي ساعدني، اقلبني شجرةً لحين ذهابهم.', order: 20 },
-      { title: 'الفصل العشرون: الهروب', content: 'أخذتُ شهيقًا حادًّا ثم خطوتُ أبتعد من خلف الشجرة بخطواتٍ مُترددة.\n\n"مَن أنتِ؟" سألني وهو يقتربُ مني.\n\n"أ-أنا-ا" خرج صوتي مُتقطعًا.\n\n"إنها قطةٌ تائهةٌ، اتركها ولا تتخذُ منها حِجةً لفشلِكَ معي"\n\n"كنتُ أمرُّ صُدفةً، سأذهب الآن"\n\n"أمسكها جيدًا لحينما أنتهي"\n\nقال مُوجهًا حديثه لرجلٍ منهم، والذي أسرع يُمسك ذراعي بقوة.\n\nثم خطرت لعقلي فكرة، فنظرتُ حولي أبحث عن جذعٍ أو صخرةٍ.\n\nفأسرعتُ أضع مرفقي سريعًا في معدته، فانحنى يُمسك بطنه بألم.\n\nلقد علمني سِراج تلك الحركة.\n\n"اتركها!"\n\nنطقَ ذلك الشاب بتلك الجملة.\n\n"احتَرِس!"\n\nقوته البدنية جيدة للغاية.\n\n"اتركيني! أنت تؤلمني"\n\nحاول أن يسرع خُطاه حينما لاحظ مجيء الشاب خلفنا، استطاع أن يُمسكه ويُحررني أخيرًا!\n\n"تستطعين الجري؟"\n\nنفيتُ برأسي سريعًا.\n\nلكنه أسرع يسحبني خلفه.\n\nسمعتُ صوت طلقة سلاح، إنهم يُحاولون التصويب علينا!\n\nليتني أحلم!\n\nاِلتفتُ أنظر لذلك الشاب.\n\n"مَن أنت؟"\n\n"لم تتعرفي عليَّ بعد؟"\n\n"راهنتُ على مجيئكِ إلي بقدميكِ"\n\n"إيلاف، ماذا تنتظري اصعدي أنتِ أيضًا!"\n\nذلك صوت كولِن!', order: 21 },
-      { title: 'الفصل الحادي والعشرون: في السيارة', content: 'انحنيتُ لمستوى النوافذ أنظرُ لوجه السائق لأجده هو بالفعل!\n\n"كولن ماذا تفعلُ هنا؟"\n\n"بل ماذا تفعلين أنتِ هُنا؟ كان من المُمكن أن تتأذي!"\n\nوفجأة اشتدَّ عليّ ألم قدميّ.\n\n"هُناك جُرح في قدمي، سأُضمده حينما نَصل"\n\nثم اِلتفتُ أُخاطب ذلك الرجل: "أنتَ أيضًا يجب عليكَ تطهير جروحكَ"\n\n"انزع ذلك السِتار لأرى جروحك"\n\n"القِناعُ هو الجُرحُ الوَحيدُ الذي يُسمَحُ لَكِ برُؤيَتِه"\n\nالقناع جُرح؟ أيُّ معنى قد تحمله تلك الكلمات؟\n\n"يُمكنكِ النزول"\n\nنبس كولن بعدما أوقف العربة.\n\nتوقفتُ فجأة عن السيرِ.\n\n"أنت من تُرسل إلي تلك الرسائل؟"\n\nسألته وأنا أخطو نحوه خطواتٍ مُتعسرةٍ من الألم.\n\nأما هو فببطءٍ شَديد أزاحَ جَسَدَهُ عَنِ السيارة، وخَطا نَحوي خُطْوَةً واحِدَةً.\n\n"إذا أَلْقَى الصَّيّادُ شِباكَهُ فِي الظَّلامِ واصْطادَ غَزالَةً.. أَتَسْأَلُهُ الغَزالةُ بَعْدَ الأسْرِ: أَنْتَ مَنْ أَلْقَى الشَّبَكَة؟"\n\nسكنت أنفاسي وتجمدت الكلمات على شفتيّ.. إنه يتلاعبُ بي.\n\nمن هو؟\n\nصعدَ يهمُّ للرحيل، أردتُ منعه لكن قدمي لم تُسعفني.\n\n"أين كنتِ؟ كدتُ أجن من الخوفِ!"\n\n"قدميكِ!" صاحت مارلين.\n\n"جرحني جذع شجرة"', order: 22 },
-      { title: 'الفصل الثاني والعشرون: ليلة الأمومة', content: 'في منتصف الليل، تعرض ابن إيلين لحرارة مرتفعة مفاجئة.\n\nسمعتُ صوت بُكاءٍ صاخب، أسرعتُ أخرجُ من غُرفتي.\n\nطرقتُ باب الغُرفةَ لتفتحَ إيلين لي ووجهها مُمتلئ بالدموع.\n\n"لا أعلمُ ليام حرارته مُرتفعةً للغايةِ!"\n\nحاولتُ تهدئتها في طريقي إلى لُيام، لقد كان نائمًا في سريره.\n\nاقتربتُ منه بخطواتٍ سريعة متجردة تمامًا من مشاعر الذعر التي تملكت إيلين.\n\n"إيلين، استمعي، الذعر لن يفيده الآن، أحتاجكِ معي، لذلك اهدئي وسيكون بخير"\n\nانحنيتُ أتحسس النبض السريع في معصمه الصغير.\n\n"أول خطوة خاطئة هي استخدام الماء البارد أو المثلج، لأنه يؤدي لانقباض الأوعية الدموية السطحية"\n\nخلعتُ عنه ملابسه الثقيلة بسرعة، ثم اتجهت نحو الحقيبة الطبية.\n\n"أحضري لي خافض حرارة المخصص للأطفال، وسرنجة قياس الجرعات."\n\nجلسنا بجانبه بعدها.. كنتُ أراقب استجابته.\n\n"الآن سيبدأ الدواء بالعمل خلال نصف ساعة."\n\n"إيلاف شُكرًا لكِ حقًا، لن أنسى مُساعدتكِ أبدًا."\n\n"ألسنا أصدقاء؟ ذلك واجبي إذًا"', order: 23 },
-      { title: 'الفصل الثالث والعشرون: اعتراف مارلين', content: 'بعدما عرضت عليّ مارلين إيصالي وجدتُ اليوم يمرُ بسلاسةٍ في العيادةِ، بل وقصصتُ على السيد جُنَيد ما حدث.\n\n"أعلمُ أنَّ عرضه ليس ورديًا كما يبدو، لكن تذكري يا إيلاف، لكي نُولدُ من جديدٍ يجب أن نموتَ"\n\nلكني لم أنسَ أن أخبر مارلين بكل شيء، عن الظروف، عن الرسائل، عن ذلك الرجل.\n\nكانت جالسةً أمامي بهدوءٍ، تُصغي إليّ دون أن تُقاطعني حتى انتهيتُ.\n\n"أعرف" قالت بهدوء، وكأنها كانت تنتظر هذه اللحظة منذ زمن.\n\n"تعرفين؟"\n\n"إيلاف، آليستر هو ابن أخي، وبيتي بيته أيضًا. كان يمرُّ من هنا وقتما يشاء، ولم يكن في نيتي أن أخدعكِ، لكنني كنتُ أرغبُ بأن تعرفيه بنفسك، لا من خلالي"\n\n"لكن.. الحريق؟"\n\n"لا أعرفُ من أين جاءت تلك الفكرة، لكن آليستر لم يُحرق مصنعي. أتفهمُ لماذا فكرتِ ذلك، لكنكِ أخطأتِ في الحكم عليه"\n\n"الرجلُ الذي ترينه باردًا وخاليًا من المشاعر.. هو أكثرُ من تعبَ في هذه العائلة."\n\n"لكن لماذا يظهر في كل مكان أذهبُ إليه، ولماذا يُرسلُ تلك الرسائل؟"\n\n"الرسائل لم تكن منه فقط، إيلاف. بعضها منه، وبعضها كان رسالتي أنا، رسائل من عائلة كانت تحاولُ أن تُخبرك بأنكِ لستِ وحدك"\n\n"لا أفهم."\n\n"الذي يقفُ دائمًا في الظل، هو من يراقبُ ليحمي، لا ليؤذي"', order: 24 },
-      { title: 'الفصل الرابع والعشرون: القرار', content: 'في الصباح، كنتُ أُفكرُ في كلمات مارلين. جمعتُ شتات عقلي وقلبي، لأتخذ قرارًا مصيريًا: لن أستسلم بعد الآن.\n\nخرجتُ فوجدتُ والدي واقفًا أمام البوابة، يصرخ في كولن.\n\nتقدم والدي نحوي بخطوات غاضبة، وقبض على معصمي بقوة: "ستعودين معي الآن، وسينتهي هذا الهراء فورًا! أعدكِ أنكِ ستتزوجين ذلك الأسبوع!"\n\n"لن أعود معك!"\n\nفي تلك اللحظة اندفع إيثان محاولًا التدخل: "سيدي، اهدأ قليلًا.. هذا ليس أسلوبًا للتعامل."\n\nارتفعت الأصوات وتداخلت الشجارات، ألقيتُ نظرة خاطفة نحو آليستر، كان يتكئ على سيارته ببرود مستفز.\n\nفاض بي الكيل، وشعرتُ بشيء يشتعل في صدري من هذا العجز، فصحت بأعلى صوتي:\n\n"حسنًا! طالما أنك مصرٌّ على تزويجي وتريد ذلك بأي ثمن.. أنـا سأتـزوج!"\n\n"إيلاف! لا تفعلي ذلك" همست مارلين.\n\nبينما رخيت قبضة والدي شيئًا فشيئًا، وترددت على شفتيه ابتسامة انتصار واسعة.\n\nلكنني التفتُّ بثبات، ووجهت نظري مباشرة نحوه هناك، وأكملت ببرود غير متوقع: ".. سأتزوج من آليستر."\n\nساد صمتٌ قاتل، واتسعت أعين الجميع بصدمة وذهول.\n\nبينما فرت شهقةً بين شفتي آيدة، وخرجت صيحةً مُستنكرةً من كلارا: "ماذا؟"\n\nحينها أدركتُ كرثةَ ما تفوه به لساني.\n\nرفعتُ عينيَّ ببطء متحديةً الخوف الذي ينهشني، لألقي نظرةً على الشخص الذي ألقيتُ مصيري بين يديه للتو.\n\nكانت نظراته باردة، لكنها تحمل شرارةً غامضة من الإعجاب بجرأتي.\n\nنهاية الجزء الأول.', order: 25 }
+      { title: 'مقدمة', content: 'بين صفحاتٍ مُزقت وأوراقٍ بَقيَت، تمتدُ الهمساتُ كصدىً عالٍ في مكانٍ مُنزوٍ، تُجسد من عُمقِ الظلامِ مشهدًا، تتلو على كلِّ مارٍ مآسي الزمن، عن أثرٍ بقي مع تلاشي الذكريات، غُبارٌ يملأه كأنه يكسيه من صعيقِ البردِ.\n\nفما آن لإنسٍ أن يستمعَ لتلاوةٍ أقسى من صُلبِ الحجر؟\n\nحين تسقُط الأقنعة، وتشتعلُ الأضواء بوميضٍ عالٍ، حينها تُدرك الحقيقة، تُبصر ما توارى خلفَ كلِّ قناعٍ جانبك، وترى أنكَ كنتَ البطل منذُ البداية.', order: 1 },
+      { title: 'الفصل الأول: سِراج', content: 'بين أصواتِ رذاذُ المطر ورائحةُ المخبوزات التي تجتازُ المكان، جلست كما عاهدت ذاتها في ركنٍ بعيدٍ، تنظرُ لكلِّ مارٍ لعلها تجد ما يُلهمها لحياةٍ جديدة.\n\nلكن لا شيء يُعيد إحياء ما مات داخلها.\n\nلملمت كل أدواتها راغبةً في الخروج، لكن أوقفتها يدٌ تَشدُ على كتفيها، التفتت تنظر..\n\n"سِراج!"\n\nتبسم بإشراقٍ في وجهها مُعانقًا لها، تضمه بشوقٍ ويفعلُ المثل.\n\n"اشتقتُ لَكِ" نبس هامسًا لها وهو يُمسد فوق خصلاتها.\n\n"متى عُدت؟" سألته وهي تسحبه للجلوس أمامها.', order: 2 },
+      { title: 'الفصل الثاني: بلا مأوى', content: 'تسيرُ بين الطُرقاتِ بلا وجهةٌ، لا مأوى لها في الوقتِ الراهن.. كادت أن تصتدم في عربةٍ لولا يد جذبتها.\n\n"إيلاف! رجاءً انتبهي"\n\n"شردتُ فقط، لِمَ لست في المقهى؟"\n\n"قررتُ السير رفقتكِ، أتُمانعين؟"\n\n"متى ستعود لها مُجددًا؟"\n\n"قريبًا، وددتُ أن آتي لتفقد المقهى والأهم تفقدكِ"', order: 3 },
+      { title: 'الفصل الثالث: السيدة كارو', content: 'أوشكت الشمس على الغروبِ وهي ما زالت تجلس بعدما رَحل سِراج، لَملمت نفسها تذهب لمنزل السيدة كارو.\n\nتلك التي كانت تعتني بها هذه الفترة، هكذا اكتسبت بعض النقود للسعي وراء حُلمها.\n\n"لقد عُدت" فاهت بها ترفع مستوى صوتها حينما دَلفت للمنزل.', order: 4 }
     ],
     design: {
       pageColor: '#fdf9f0',
@@ -845,6 +1065,7 @@ function getDefaultBook() {
       pageSize: 'A5',
       margin: 45,
       direction: 'rtl',
+      autoDirection: true,
       headerText: 'زها',
       footerText: 'Designed and Programming by Mohamed Ali',
       showPageNumbers: true
@@ -869,42 +1090,106 @@ function seedDefaultBook() {
 }
 
 /* ============================================================
-   🧮 حسابات التقسيم
+   📐 REAL PAGE MEASUREMENT
    ============================================================ */
-const PAGE_DIMENSIONS = {
-  'A4':  { width: 210, height: 297 },
-  'A5':  { width: 148, height: 210 },
-  '6x9': { width: 152.4, height: 228.6 }
-};
-
-function calculateCharsPerPage(design) {
+function createMeasureElement(design) {
   const d = design || defaultDesign();
   const dims = PAGE_DIMENSIONS[d.pageSize] || PAGE_DIMENSIONS['A5'];
-
-  const pageWidth = dims.width;
-  const pageHeight = dims.height;
-
   const marginMm = d.margin * 0.264;
-  const contentWidth = Math.max(20, pageWidth - marginMm * 2);
-  const contentHeight = Math.max(20, pageHeight - marginMm * 2);
+  const contentWidthMm = Math.max(20, dims.width - marginMm * 2);
+  const contentHeightMm = Math.max(20, dims.height - marginMm * 2);
 
-  const fontSizeMm = d.fontSize * 0.264;
-  const lineHeightMm = fontSizeMm * d.lineHeight;
+  const el = document.createElement('div');
+  el.style.cssText = `
+    position: fixed;
+    left: -99999px;
+    top: 0;
+    width: ${contentWidthMm * MM_TO_PX}px;
+    height: ${contentHeightMm * MM_TO_PX}px;
+    font-family: '${d.fontFamily}', 'Amiri', sans-serif;
+    font-size: ${d.fontSize}px;
+    line-height: ${d.lineHeight};
+    direction: ${d.direction};
+    text-align: ${d.direction === 'rtl' ? 'right' : 'left'};
+    overflow: hidden;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    box-sizing: border-box;
+    visibility: hidden;
+    pointer-events: none;
+  `;
+  document.body.appendChild(el);
+  return el;
+}
 
-  const linesPerPage = Math.max(5, Math.floor(contentHeight / lineHeightMm));
-  const avgCharWidth = fontSizeMm * 0.55;
-  const charsPerLine = Math.max(10, Math.floor(contentWidth / avgCharWidth));
-  const totalChars = linesPerPage * charsPerLine;
+function measureRealCharsPerPage(design, sampleText = null) {
+  const d = design || defaultDesign();
+  const sample = sampleText || (
+    'في قديم الزمان كان هناك رجلٌ يعيش في قريةٍ صغيرةٍ على أطراف المدينة، ' +
+    'وكان له من الأولاد ثلاثة، يكبرهم جميعًا حكيمٌ يمتلك قلبًا طيبًا وعقلًا راجحًا. ' +
+    'وفي أحد الأيام قرر أن يرحل إلى المدينة بحثًا عن عملٍ يُعينه على متاعب الحياة. ' +
+    'فقال له والده: يا بني إن الدنيا دار ممرٍ لا دار مقرٍ، فاتقِ الله فيها واعمل صالحًا. '
+  ).repeat(20);
 
-  return {
-    linesPerPage,
-    charsPerLine,
-    totalChars: Math.max(200, Math.floor(totalChars))
-  };
+  const measureEl = createMeasureElement(d);
+  const containerHeight = measureEl.clientHeight;
+
+  let low = 0, high = sample.length, best = 0;
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    measureEl.textContent = sample.slice(0, mid);
+    if (measureEl.scrollHeight <= containerHeight + 1) {
+      best = mid;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  document.body.removeChild(measureEl);
+  return Math.max(50, best);
+}
+
+function getCachedCharsPerPage(design) {
+  const key = [
+    design.pageSize, design.fontFamily, design.fontSize,
+    design.lineHeight, design.margin, design.direction
+  ].join('|');
+  if (_measureCache.has(key)) return _measureCache.get(key);
+  const v = measureRealCharsPerPage(design);
+  _measureCache.set(key, v);
+  return v;
+}
+
+/* ============================================================
+   ✂️ SMART TEXT SPLITTING
+   ============================================================ */
+function findSmartCutoff(text, target) {
+  const minCut = Math.max(1, Math.floor(target * 0.7));
+  const maxCut = Math.min(text.length, Math.floor(target * 1.15));
+
+  for (let i = maxCut; i >= minCut; i--) {
+    if (text[i] === '\n' && text[i - 1] === '\n') return i + 1;
+  }
+  const enders = ['.', '؟', '!', '۔', ':', '،', '\n'];
+  for (let i = maxCut; i >= minCut; i--) {
+    if (enders.includes(text[i])) {
+      const next = text[i + 1];
+      if (!next || /\s/.test(next) || next === '\n') return i + 1;
+    }
+  }
+  for (let i = maxCut; i >= minCut; i--) {
+    if (/\s/.test(text[i])) return i + 1;
+  }
+  for (let i = target; i < Math.min(text.length, target + 30); i++) {
+    if (/\s/.test(text[i])) return i + 1;
+  }
+  return target;
 }
 
 function splitIntoPages(chapters, design) {
-  const { totalChars: charsPerPage } = calculateCharsPerPage(design);
+  const charsPerPage = getCachedCharsPerPage(design);
   const pages = [];
 
   chapters.forEach((ch, chIdx) => {
@@ -939,37 +1224,15 @@ function splitIntoPages(chapters, design) {
   return pages;
 }
 
-function findSmartCutoff(text, target) {
-  const minCut = Math.floor(target * 0.7);
-  const maxCut = Math.min(text.length, Math.floor(target * 1.15));
-
-  for (let i = maxCut; i >= minCut; i--) {
-    if (text[i] === '\n' && text[i - 1] === '\n') return i + 1;
-  }
-
-  const enders = ['.', '؟', '!', '۔', ':', '،', '\n'];
-  for (let i = maxCut; i >= minCut; i--) {
-    if (enders.includes(text[i])) {
-      const next = text[i + 1];
-      if (!next || /\s/.test(next) || next === '\n') return i + 1;
-    }
-  }
-
-  for (let i = maxCut; i >= minCut; i--) {
-    if (/\s/.test(text[i])) return i + 1;
-  }
-
-  for (let i = target; i < Math.min(text.length, target + 30); i++) {
-    if (/\s/.test(text[i])) return i + 1;
-  }
-
-  return target;
-}
-
 /* ============================================================
-   📖 بناء صفحات الكتاب
+   📖 BUILD PAGES
    ============================================================ */
 function buildPages(book) {
+  if (_pagesCache.has(book.id)) {
+    const cached = _pagesCache.get(book.id);
+    if (cached.updatedAt === book.updatedAt) return cached.pages;
+  }
+
   const d = book.design || defaultDesign();
   const pages = [];
 
@@ -989,27 +1252,25 @@ function buildPages(book) {
 
   const chapters = (book.chapters || []).filter(c => c.title || c.content);
   const contentPages = splitIntoPages(chapters, d);
-  contentPages.forEach(p => {
-    pages.push({ type: 'content', ...p });
-  });
+  contentPages.forEach(p => pages.push({ type: 'content', ...p }));
 
-  pages.push({
-    type: 'endPage',
-    title: book.title
-  });
+  pages.push({ type: 'endPage', title: book.title });
 
   pages.push({
     type: 'backCover',
-    cover: book.cover,
+    cover: book.backCover || '',
     title: book.title,
     author: book.author,
     description: book.description
   });
 
+  _pagesCache.set(book.id, { pages, updatedAt: book.updatedAt });
   return pages;
 }
 
-/* ============== NAVIGATION ============== */
+/* ============================================================
+   🧭 NAVIGATION
+   ============================================================ */
 function goHome() {
   currentEditingId = null;
   document.getElementById('mobileBar').classList.add('hidden');
@@ -1027,7 +1288,9 @@ function openEditor(id) {
   renderEditor();
 }
 
-/* ============== LIBRARY ============== */
+/* ============================================================
+   📚 LIBRARY
+   ============================================================ */
 function renderLibrary() {
   const app = document.getElementById('app');
   const books = getBooks();
@@ -1055,48 +1318,62 @@ function renderLibrary() {
       ${books.map(b => bookCardHtml(b)).join('')}
     </div>`;
 }
+
 function bookCardHtml(b) {
   const cover = b.cover
     ? `<img src="${b.cover}" class="book-cover" alt="cover">`
     : `<div class="book-cover">${escapeHtml((b.title || 'ك')[0])}</div>`;
   const chaptersCount = (b.chapters || []).length;
+  const dir = detectBookDirection(b);
+  const dirLabel = dir === 'rtl' ? 'عربي' : 'إنجليزي';
   return `
     <div class="book-card">
       ${cover}
       <div class="book-info">
         <h3 title="${escapeHtml(b.title)}">${escapeHtml(b.title)}</h3>
         <div class="author">${escapeHtml(b.author || 'مؤلف مجهول')}</div>
-        <div class="meta">${chaptersCount} فصل</div>
+        <div class="meta">
+          <span>${chaptersCount} فصل</span>
+          <span>${dirLabel}</span>
+        </div>
       </div>
       <div class="card-actions">
-        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openEditor('${b.id}')">✏️</button>
-        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openViewer('${b.id}')">👁️</button>
-        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();confirmDelete('${b.id}')">🗑️</button>
+        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openEditor('${b.id}')" title="تعديل">✏️</button>
+        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openViewer('${b.id}')" title="عرض">👁️</button>
+        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();confirmDelete('${b.id}')" title="حذف">🗑️</button>
       </div>
     </div>`;
 }
+
 function confirmDelete(id) {
   const b = getBook(id);
-  if (!b) return;
+  if (!b) return false;
   if (confirm(`هل أنت متأكد من حذف "${b.title}"؟`)) {
     deleteBook(id);
     toast('تم حذف الكتاب', 'success');
-    goHome();
+    if (currentEditingId === id) goHome();
+    else renderLibrary();
+    return true;
   }
+  return false;
 }
 
-/* ============== EDITOR ============== */
+/* ============================================================
+   ✏️ EDITOR
+   ============================================================ */
 function renderEditor() {
   const b = getBook(currentEditingId);
   if (!b) { goHome(); return; }
   const d = b.design || defaultDesign();
+  const detectedDir = detectBookDirection(b);
 
   if (isMobile) {
     document.getElementById('mobileBar').classList.remove('hidden');
     document.getElementById('fab').classList.add('hidden');
   }
 
-  const splitInfo = calculateCharsPerPage(d);
+  const charsPerPage = getCachedCharsPerPage(d);
+  const dims = PAGE_DIMENSIONS[d.pageSize] || PAGE_DIMENSIONS['A5'];
 
   document.getElementById('app').innerHTML = `
     <div class="editor-layout">
@@ -1117,12 +1394,12 @@ function renderEditor() {
             </div>
 
             <div class="stats-box">
-              <h4>📊 إحصائيات التقسيم الحالي</h4>
+              <h4>📊 إحصائيات الصفحة (قياس فعلي)</h4>
               <div class="stats-grid">
                 <div class="stat-item"><span>حجم الورق</span><span>${d.pageSize}</span></div>
-                <div class="stat-item"><span>سطور/صفحة</span><span>${splitInfo.linesPerPage}</span></div>
-                <div class="stat-item"><span>أحرف/سطر</span><span>${splitInfo.charsPerLine}</span></div>
-                <div class="stat-item"><span>أحرف/صفحة</span><span>${splitInfo.totalChars}</span></div>
+                <div class="stat-item"><span>الأبعاد</span><span>${dims.width}×${dims.height}mm</span></div>
+                <div class="stat-item"><span>أحرف/صفحة</span><span>${charsPerPage}</span></div>
+                <div class="stat-item"><span>الاتجاه</span><span>${detectedDir === 'rtl' ? 'عربي ←' : '→ English'}</span></div>
               </div>
             </div>
 
@@ -1151,12 +1428,19 @@ function renderEditor() {
               <input type="text" value="${escapeHtml(b.isbn)}" oninput="updateField('isbn', this.value)">
             </div>
 
-            <h3 style="margin-top:20px">🖼️ الغلاف</h3>
+            <h3 style="margin-top:20px">🖼️ الغلاف الأمامي</h3>
             <div class="cover-preview" onclick="document.getElementById('coverInput').click()">
-              ${b.cover ? `<img src="${b.cover}">` : '<span>📷 اضغط لرفع الغلاف</span>'}
+              ${b.cover ? `<img src="${b.cover}">` : '<span>📷 اضغط لرفع الغلاف الأمامي</span>'}
             </div>
             <input type="file" id="coverInput" accept="image/*" class="hidden" onchange="handleCover(event)">
-            ${b.cover ? `<button class="btn btn-danger btn-sm" style="width:100%" onclick="removeCover()">🗑️ إزالة الغلاف</button>` : ''}
+            ${b.cover ? `<button class="btn btn-danger btn-sm" style="width:100%" onclick="removeCover()">🗑️ إزالة الغلاف الأمامي</button>` : ''}
+
+            <h3 style="margin-top:20px">🖼️ الغلاف الخلفي</h3>
+            <div class="cover-preview" onclick="document.getElementById('backCoverInput').click()">
+              ${b.backCover ? `<img src="${b.backCover}">` : '<span>📷 اضغط لرفع الغلاف الخلفي</span>'}
+            </div>
+            <input type="file" id="backCoverInput" accept="image/*" class="hidden" onchange="handleBackCover(event)">
+            ${b.backCover ? `<button class="btn btn-danger btn-sm" style="width:100%" onclick="removeBackCover()">🗑️ إزالة الغلاف الخلفي</button>` : ''}
           </div>
 
           <div id="tab-preview" class="${currentTab!=='preview'?'hidden':''}">
@@ -1178,11 +1462,12 @@ function renderEditor() {
                 <option value="Cairo" ${d.fontFamily==='Cairo'?'selected':''}>Cairo</option>
                 <option value="Amiri" ${d.fontFamily==='Amiri'?'selected':''}>Amiri</option>
                 <option value="Tajawal" ${d.fontFamily==='Tajawal'?'selected':''}>Tajawal</option>
+                <option value="Scheherazade New" ${d.fontFamily==='Scheherazade New'?'selected':''}>Scheherazade</option>
               </select>
             </div>
             <div class="form-group">
               <label id="lbl-fontSize">حجم الخط: ${d.fontSize}px</label>
-              <input type="range" min="12" max="24" value="${d.fontSize}" oninput="updateDesignLive('fontSize', +this.value)">
+              <input type="range" min="12" max="28" value="${d.fontSize}" oninput="updateDesignLive('fontSize', +this.value)">
             </div>
             <div class="form-group">
               <label id="lbl-lineHeight">ارتفاع السطر: ${d.lineHeight}</label>
@@ -1210,8 +1495,14 @@ function renderEditor() {
               <input type="range" min="10" max="80" value="${d.margin}" oninput="updateDesignLive('margin', +this.value)">
             </div>
             <div class="form-group">
-              <label>الاتجاه</label>
-              <select onchange="updateDesign('direction', this.value)">
+              <label>
+                <input type="checkbox" ${d.autoDirection!==false?'checked':''} onchange="updateDesign('autoDirection', this.checked)">
+                كشف الاتجاه تلقائيًا
+              </label>
+            </div>
+            <div class="form-group" ${d.autoDirection!==false?'style="opacity:0.5"':''}>
+              <label>الاتجاه (يدوي)</label>
+              <select onchange="updateDesign('direction', this.value)" ${d.autoDirection!==false?'disabled':''}>
                 <option value="rtl" ${d.direction==='rtl'?'selected':''}>عربي (RTL)</option>
                 <option value="ltr" ${d.direction==='ltr'?'selected':''}>إنجليزي (LTR)</option>
               </select>
@@ -1237,7 +1528,7 @@ function renderEditor() {
           <button class="btn btn-success" style="width:100%;margin-bottom:8px" onclick="saveCurrentBook()">💾 حفظ</button>
           <button class="btn btn-primary" style="width:100%;margin-bottom:8px" onclick="openViewer('${b.id}')">📖 عرض الكتاب</button>
           <button class="btn btn-outline" style="width:100%;margin-bottom:8px" onclick="exportPDF('${b.id}')">📄 تصدير PDF</button>
-          <button class="btn btn-danger" style="width:100%" onclick="confirmDelete('${b.id}');goHome()">🗑️ حذف الكتاب</button>
+          <button class="btn btn-danger" style="width:100%" onclick="confirmDelete('${b.id}')">🗑️ حذف الكتاب</button>
         </div>
       </div>
     </div>`;
@@ -1259,16 +1550,25 @@ function switchTab(tab) {
   if (tab === 'preview') renderPreview();
 }
 
-/* ============== CHAPTERS ============== */
+/* ============================================================
+   📝 CHAPTERS
+   ============================================================ */
 function renderChapters() {
   const b = getBook(currentEditingId);
   if (!b) return;
   const list = document.getElementById('chaptersList');
+  const openStates = new Set();
+  document.querySelectorAll('.chapter-item.open').forEach(el => {
+    const m = el.id.match(/ch-(\d+)/);
+    if (m) openStates.add(+m[1]);
+  });
+  if (openStates.size === 0) openStates.add(0);
+
   list.innerHTML = (b.chapters || []).map((c, i) => `
-    <div class="chapter-item ${i===0?'open':''}" id="ch-${i}">
+    <div class="chapter-item ${openStates.has(i)?'open':''}" id="ch-${i}">
       <div class="chapter-header" onclick="toggleChapter(${i})">
         <span>📖 ${escapeHtml(c.title || 'فصل')}</span>
-        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();removeChapter(${i})">🗑️</button>
+        <button class="btn btn-danger btn-xs" onclick="event.stopPropagation();removeChapter(${i})">🗑️</button>
       </div>
       <div class="chapter-body">
         <div class="form-group">
@@ -1282,6 +1582,7 @@ function renderChapters() {
       </div>
     </div>`).join('');
 }
+
 function toggleChapter(i) {
   document.getElementById(`ch-${i}`).classList.toggle('open');
 }
@@ -1306,14 +1607,18 @@ function updateChapter(i, field, value) {
   const b = getBook(currentEditingId);
   b.chapters[i][field] = value;
   b.updatedAt = Date.now();
+  _pagesCache.delete(b.id);
   debounce(`chapter-${i}-${field}`, () => upsertBook(b), 400);
 }
 
-/* ============== FIELDS ============== */
+/* ============================================================
+   ✏️ FIELDS / DESIGN
+   ============================================================ */
 function updateField(field, value) {
   const b = getBook(currentEditingId);
   b[field] = value;
   b.updatedAt = Date.now();
+  _pagesCache.delete(b.id);
   debounce(`field-${field}`, () => upsertBook(b), 400);
 }
 
@@ -1322,6 +1627,8 @@ function updateDesignLive(field, value) {
   if (!b.design) b.design = defaultDesign();
   b.design[field] = value;
   b.updatedAt = Date.now();
+  _measureCache.clear();
+  _pagesCache.delete(b.id);
 
   const labelMap = {
     fontSize: { id: 'lbl-fontSize', prefix: 'حجم الخط: ', suffix: 'px' },
@@ -1346,9 +1653,11 @@ function updateDesign(field, value) {
   if (!b.design) b.design = defaultDesign();
   b.design[field] = value;
   b.updatedAt = Date.now();
+  _measureCache.clear();
+  _pagesCache.delete(b.id);
   upsertBook(b);
 
-  if (field === 'pageSize') {
+  if (field === 'pageSize' || field === 'autoDirection') {
     renderEditor();
     setTimeout(() => switchTab('design'), 10);
     return;
@@ -1356,17 +1665,17 @@ function updateDesign(field, value) {
   if (currentTab === 'preview') renderPreview();
 }
 
-/* ============== COVER ============== */
+/* ============================================================
+   🖼️ COVERS
+   ============================================================ */
 function handleCover(e) {
   const file = e.target.files[0];
   if (!file) return;
-
   if (file.size > 2 * 1024 * 1024) {
     toast('حجم الصورة كبير! الحد الأقصى 2MB', 'error');
     e.target.value = '';
     return;
   }
-
   const reader = new FileReader();
   reader.onload = ev => {
     const b = getBook(currentEditingId);
@@ -1375,19 +1684,51 @@ function handleCover(e) {
     upsertBook(b);
     renderEditor();
     switchTab('info');
-    toast('تم رفع الغلاف', 'success');
+    toast('تم رفع الغلاف الأمامي', 'success');
   };
   reader.readAsDataURL(file);
 }
 function removeCover() {
   const b = getBook(currentEditingId);
   b.cover = '';
+  b.updatedAt = Date.now();
   upsertBook(b);
   renderEditor();
   switchTab('info');
 }
 
-/* ============== SAVE ============== */
+function handleBackCover(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) {
+    toast('حجم الصورة كبير! الحد الأقصى 2MB', 'error');
+    e.target.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const b = getBook(currentEditingId);
+    b.backCover = ev.target.result;
+    b.updatedAt = Date.now();
+    upsertBook(b);
+    renderEditor();
+    switchTab('info');
+    toast('تم رفع الغلاف الخلفي', 'success');
+  };
+  reader.readAsDataURL(file);
+}
+function removeBackCover() {
+  const b = getBook(currentEditingId);
+  b.backCover = '';
+  b.updatedAt = Date.now();
+  upsertBook(b);
+  renderEditor();
+  switchTab('info');
+}
+
+/* ============================================================
+   💾 SAVE
+   ============================================================ */
 function saveCurrentBook() {
   const b = getBook(currentEditingId);
   if (!b) return;
@@ -1396,14 +1737,69 @@ function saveCurrentBook() {
   toast('تم حفظ الكتاب بنجاح ✅', 'success');
 }
 
-/* ============== PREVIEW ============== */
+/* ============================================================
+   👁️ PREVIEW
+   ============================================================ */
 function renderPreview() {
   const b = getBook(currentEditingId);
   if (!b) return;
-  const d = b.design || defaultDesign();
+  const d = { ...(b.design || defaultDesign()) };
+  d.direction = detectBookDirection(b);
   const pages = buildPages(b);
   const container = document.getElementById('previewContainer');
-  container.innerHTML = pages.slice(0, 3).map((p, i) => renderPreviewPage(p, d, i)).join('');
+
+  const spreads = [];
+  for (let i = 0; i < pages.length; i += 2) {
+    spreads.push({
+      left: pages[i],
+      right: pages[i + 1] || { type: 'blank' },
+      leftIndex: i,
+      rightIndex: i + 1 < pages.length ? i + 1 : -1
+    });
+  }
+
+  container.innerHTML = `
+    <div class="preview-toolbar">
+      <button class="btn btn-outline btn-sm" onclick="previewGo(-1)">◀ السابق</button>
+      <span id="previewIndicator" class="preview-indicator">1 / ${spreads.length}</span>
+      <button class="btn btn-outline btn-sm" onclick="previewGo(1)">التالي ▶</button>
+    </div>
+    <div class="preview-spread-container">
+      ${spreads.map((s, idx) => `
+        <div class="preview-spread" data-spread="${idx}" data-dir="${d.direction}" style="display:${idx === 0 ? 'flex' : 'none'}">
+          <div class="preview-spread-page">
+            ${renderPreviewPage(s.left, d, s.leftIndex)}
+          </div>
+          <div class="preview-spread-page">
+            ${renderPreviewPage(s.right, d, s.rightIndex)}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <div style="text-align:center;margin-top:12px;font-size:13px;color:var(--muted)">
+      📖 ${spreads.length} صفحة مزدوجة — الاتجاه: ${d.direction === 'rtl' ? 'عربي (يمين ←)' : 'إنجليزي (→ شمال)'}
+    </div>
+  `;
+
+  _previewSpreadIndex = 0;
+  _previewSpreadsCount = spreads.length;
+  updatePreviewIndicator();
+}
+
+function previewGo(delta) {
+  let idx = _previewSpreadIndex + delta;
+  if (idx < 0) idx = 0;
+  if (idx >= _previewSpreadsCount) idx = _previewSpreadsCount - 1;
+  _previewSpreadIndex = idx;
+  document.querySelectorAll('.preview-spread').forEach((el, i) => {
+    el.style.display = i === idx ? 'flex' : 'none';
+  });
+  updatePreviewIndicator();
+}
+
+function updatePreviewIndicator() {
+  const el = document.getElementById('previewIndicator');
+  if (el) el.textContent = `${_previewSpreadIndex + 1} / ${_previewSpreadsCount}`;
 }
 
 function renderPreviewPage(p, d, index) {
@@ -1414,74 +1810,72 @@ function renderPreviewPage(p, d, index) {
     font-size:${d.fontSize}px;
     line-height:${d.lineHeight};
     direction:${d.direction};
-    padding:${isMobile ? 20 : d.margin}px;
   `;
 
   if (p.type === 'frontCover') {
     if (p.cover) {
-      return `
-        <div class="preview-page" style="padding:0;background:#000;position:relative;min-height:500px">
-          <img src="${p.cover}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0">
-        </div>`;
-    }
-    return `
-      <div class="preview-page" style="padding:0;background:linear-gradient(135deg,#8b5e34,#5c3d1f);position:relative;min-height:500px;display:flex;align-items:center;justify-content:center;color:white;text-align:center">
-        <div style="padding:40px">
-          <h1 style="font-family:'Amiri',serif;font-size:2.5em;color:#d4a373;margin-bottom:20px">${escapeHtml(p.title)}</h1>
-          <p style="opacity:0.9">${escapeHtml(p.author || '')}</p>
-        </div>
+      return `<div class="preview-page" style="padding:0;background:#000;position:relative;min-height:500px">
+        <img src="${p.cover}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0">
       </div>`;
+    }
+    return `<div class="preview-page" style="padding:0;background:linear-gradient(135deg,#8b5e34,#5c3d1f);position:relative;min-height:500px;display:flex;align-items:center;justify-content:center;color:white;text-align:center">
+      <div style="padding:40px">
+        <h1 style="font-family:'Amiri',serif;font-size:2.5em;color:#d4a373;margin-bottom:20px">${escapeHtml(p.title)}</h1>
+        <p style="opacity:0.9">${escapeHtml(p.author || '')}</p>
+      </div>
+    </div>`;
   }
 
   if (p.type === 'backCover') {
     if (p.cover) {
-      return `
-        <div class="preview-page" style="padding:0;background:#000;position:relative;min-height:500px">
-          <img src="${p.cover}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;filter:brightness(0.6)">
-          <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.9),transparent);padding:40px;display:flex;flex-direction:column;justify-content:flex-end;color:white">
-            <h2 style="color:#d4a373;margin-bottom:12px">${escapeHtml(p.title)}</h2>
-            <p style="opacity:0.9;font-size:0.9em">${escapeHtml(p.description || '')}</p>
-          </div>
-        </div>`;
-    }
-    return `
-      <div class="preview-page" style="padding:0;background:linear-gradient(135deg,#5c3d1f,#8b5e34);position:relative;min-height:500px;display:flex;flex-direction:column;justify-content:center;align-items:center;color:white;text-align:center;padding:40px">
-        <h2 style="font-family:'Amiri',serif;font-size:1.8em;color:#d4a373;margin-bottom:20px">${escapeHtml(p.title)}</h2>
-        <p style="opacity:0.9;font-size:0.9em">${escapeHtml(p.description || '')}</p>
+      return `<div class="preview-page" style="padding:0;background:#000;position:relative;min-height:500px">
+        <img src="${p.cover}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;filter:brightness(0.55)">
+        <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.92),transparent);padding:40px;display:flex;flex-direction:column;justify-content:flex-end;color:white">
+          <h2 style="color:#d4a373;margin-bottom:12px">${escapeHtml(p.title)}</h2>
+          <p style="opacity:0.9;font-size:0.9em">${escapeHtml(p.description || '')}</p>
+        </div>
       </div>`;
+    }
+    return `<div class="preview-page" style="padding:40px;background:linear-gradient(135deg,#5c3d1f,#8b5e34);position:relative;min-height:500px;display:flex;flex-direction:column;justify-content:center;align-items:center;color:white;text-align:center">
+      <h2 style="font-family:'Amiri',serif;font-size:1.8em;color:#d4a373;margin-bottom:20px">${escapeHtml(p.title)}</h2>
+      <p style="opacity:0.9;font-size:0.9em">${escapeHtml(p.description || '')}</p>
+      <div style="margin-top:30px;font-size:24px;opacity:0.5">✦ ✦ ✦</div>
+    </div>`;
   }
 
   if (p.type === 'title') {
-    return `
-      <div class="preview-page ${d.paperStyle}" style="${baseStyle};text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center">
-        <h1 style="font-size:2em;margin-bottom:20px">${escapeHtml(p.title)}</h1>
-        ${p.author ? `<p style="font-size:1.2em;opacity:0.7;margin-bottom:16px">${escapeHtml(p.author)}</p>` : ''}
-        ${p.category ? `<p style="opacity:0.5">${escapeHtml(p.category)}</p>` : ''}
-      </div>`;
+    return `<div class="preview-page ${d.paperStyle}" style="${baseStyle};text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center">
+      <h1 style="font-size:2em;margin-bottom:20px">${escapeHtml(p.title)}</h1>
+      ${p.author ? `<p style="font-size:1.2em;opacity:0.7;margin-bottom:16px">${escapeHtml(p.author)}</p>` : ''}
+      ${p.category ? `<p style="opacity:0.5">${escapeHtml(p.category)}</p>` : ''}
+    </div>`;
   }
 
   if (p.type === 'endPage') {
-    return `
-      <div class="preview-page ${d.paperStyle}" style="${baseStyle};text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center">
-        <div style="font-size:48px;margin-bottom:20px;opacity:0.5">✦</div>
-        <h2 style="font-family:'Amiri',serif;font-size:1.5em;margin-bottom:16px;opacity:0.7">النهاية</h2>
-      </div>`;
+    return `<div class="preview-page ${d.paperStyle}" style="${baseStyle};text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center">
+      <div style="font-size:48px;margin-bottom:20px;opacity:0.5">✦</div>
+      <h2 style="font-family:'Amiri',serif;font-size:1.5em;margin-bottom:16px;opacity:0.7">النهاية</h2>
+    </div>`;
   }
 
-  return `
-    <div class="preview-page ${d.paperStyle}" style="${baseStyle}">
-      ${d.headerText ? `<div class="preview-header">${escapeHtml(d.headerText)}</div>` : ''}
-      ${p.chapterTitle ? `<h2 style="margin-bottom:16px;font-size:1.5em">${escapeHtml(p.chapterTitle)}</h2>` : ''}
-      <p style="white-space:pre-wrap">${escapeHtml(p.content) || ''}</p>
-      ${d.footerText ? `<div class="preview-footer">${escapeHtml(d.footerText)}</div>` : ''}
-      ${d.showPageNumbers ? `<div style="text-align:center;font-size:12px;color:#999;margin-top:10px">${index + 1}</div>` : ''}
-    </div>`;
+  if (!p || p.type === 'blank') {
+    return `<div class="preview-page" style="${baseStyle}"></div>`;
+  }
+
+  return `<div class="preview-page ${d.paperStyle}" style="${baseStyle};padding:${d.margin}px;box-sizing:border-box;display:flex;flex-direction:column">
+    ${d.headerText ? `<div class="preview-header">${escapeHtml(d.headerText)}</div>` : ''}
+    <div style="flex:1;min-height:0;overflow:hidden">
+      ${p.chapterTitle ? `<h2 style="margin:0 0 16px 0;font-size:1.5em">${escapeHtml(p.chapterTitle)}</h2>` : ''}
+      <div style="white-space:pre-wrap;overflow-wrap:break-word">${escapeHtml(p.content) || ''}</div>
+    </div>
+    ${d.footerText ? `<div class="preview-footer">${escapeHtml(d.footerText)}</div>` : ''}
+    ${d.showPageNumbers && index >= 0 ? `<div style="text-align:center;font-size:12px;color:#999;margin-top:10px">${index + 1}</div>` : ''}
+  </div>`;
 }
 
 /* ============================================================
    📖 BOOK VIEWER
    ============================================================ */
-
 function openViewer(id) {
   const b = getBook(id);
   if (!b) return;
@@ -1489,59 +1883,30 @@ function openViewer(id) {
   const pages = buildPages(b);
   viewerLeaves = pagesToLeaves(pages);
   viewerLeafIndex = 0;
+  _isAnimating = false;
   renderViewer();
   document.getElementById('modal').classList.add('active');
   document.body.style.overflow = 'hidden';
 }
 
+/* ✅ pairing بسيط + padding لعدد زوجي */
 function pagesToLeaves(pages) {
-  if (pages.length === 0) return [];
+  if (!pages || pages.length === 0) return [];
+
+  const padded = [...pages];
+  while (padded.length % 2 !== 0) {
+    padded.push({ type: 'blank' });
+  }
+
   const leaves = [];
-
-  leaves.push({
-    front: pages[0],
-    frontIndex: 0,
-    back: { type: 'blank' },
-    backIndex: -1
-  });
-
-  if (pages[1] && pages[1].type === 'title') {
+  for (let i = 0; i < padded.length; i += 2) {
     leaves.push({
-      front: pages[1],
-      frontIndex: 1,
-      back: { type: 'blank' },
-      backIndex: -1
+      front: padded[i],
+      frontIndex: i,
+      back: padded[i + 1] || { type: 'blank' },
+      backIndex: i + 1 < padded.length ? i + 1 : -1
     });
   }
-
-  const contentStart = 2;
-  const contentEnd = pages.length - 2;
-  let i = contentStart;
-  const middlePages = [];
-  while (i <= contentEnd) {
-    middlePages.push({ page: pages[i], index: i });
-    i++;
-  }
-
-  for (let j = 0; j < middlePages.length; j += 2) {
-    const first = middlePages[j];
-    const second = middlePages[j + 1];
-
-    leaves.push({
-      front: first.page,
-      frontIndex: first.index,
-      back: second ? second.page : { type: 'blank' },
-      backIndex: second ? second.index : -1
-    });
-  }
-
-  leaves.push({
-    front: { type: 'blank' },
-    frontIndex: -1,
-    back: pages[pages.length - 1],
-    backIndex: pages.length - 1
-  });
-
   return leaves;
 }
 
@@ -1551,11 +1916,17 @@ function closeModal() {
   viewerBook = null;
   viewerLeaves = [];
   viewerLeafIndex = 0;
+  _isAnimating = false;
+  if (_activeKeydownHandler) {
+    document.removeEventListener('keydown', _activeKeydownHandler);
+    _activeKeydownHandler = null;
+  }
 }
 
 function renderViewer() {
   const b = viewerBook;
-  const d = b.design || defaultDesign();
+  const d = { ...(b.design || defaultDesign()) };
+  d.direction = detectBookDirection(b);
   const totalLeaves = viewerLeaves.length;
 
   const pageBaseStyle = `
@@ -1570,13 +1941,11 @@ function renderViewer() {
   const paperClass = d.paperStyle !== 'plain' ? d.paperStyle : '';
 
   const leavesHtml = viewerLeaves.map((leaf, i) => {
-    const isFlipped = i < viewerLeafIndex;
-    const zIndex = isFlipped ? (totalLeaves - i) : (totalLeaves * 2 - i);
     const frontHtml = renderViewerPage(leaf.front, leaf.frontIndex, d, paperClass, pageBaseStyle, 'front');
     const backHtml = renderViewerPage(leaf.back, leaf.backIndex, d, paperClass, pageBaseStyle, 'back');
 
     return `
-      <div class="leaf ${isFlipped ? 'flipped' : ''}" data-index="${i}" style="z-index:${zIndex}">
+      <div class="leaf" data-index="${i}">
         <div class="face front">${frontHtml}</div>
         <div class="face back">${backHtml}</div>
       </div>`;
@@ -1584,12 +1953,12 @@ function renderViewer() {
 
   document.getElementById('modalContent').innerHTML = `
     <div class="modal-header">
-      <h3>📖 ${escapeHtml(b.title)}</h3>
+      <h3>📖 ${escapeHtml(b.title)} <span style="font-size:12px;color:var(--muted);font-weight:400">(${d.direction === 'rtl' ? 'عربي — يفتح من اليمين' : 'English — opens from left'})</span></h3>
       <button class="close-btn" onclick="closeModal()">×</button>
     </div>
 
     <div class="book-viewer ${isMobile ? 'mobile-mode' : ''}">
-      <div class="flipbook">
+      <div class="flipbook closed" data-dir="${d.direction}" id="flipbookEl">
         <div class="flipbook-bg"></div>
         ${leavesHtml}
       </div>
@@ -1598,8 +1967,8 @@ function renderViewer() {
     <div class="page-indicator"><span id="pageInfo"></span></div>
 
     <div class="viewer-controls">
-      <button class="btn btn-outline" onclick="prevLeaf()" id="prevBtn">← السابق</button>
-      <button class="btn btn-primary" onclick="nextLeaf()" id="nextBtn">التالي →</button>
+      <button class="btn btn-outline" onclick="prevLeaf()" id="prevBtn" disabled>← السابق</button>
+      <button class="btn btn-primary" onclick="nextLeaf()" id="nextBtn">📖 فتح الكتاب →</button>
     </div>
 
     <div style="display:flex;justify-content:center;gap:10px;margin-top:14px;flex-wrap:wrap">
@@ -1609,13 +1978,54 @@ function renderViewer() {
     ${d.footerText ? `<div style="text-align:center;font-size:11px;color:#aaa;margin-top:16px">${escapeHtml(d.footerText)}</div>` : ''}`;
 
   updateLeavesState();
+  attachCoverClickHandler();
 
-  document.onkeydown = (e) => {
+  _activeKeydownHandler = (e) => {
     if (!document.getElementById('modal').classList.contains('active')) return;
-    if (e.key === 'ArrowLeft') nextLeaf();
-    else if (e.key === 'ArrowRight') prevLeaf();
+    const isRTL = d.direction === 'rtl';
+    if (e.key === 'ArrowLeft') isRTL ? nextLeaf() : prevLeaf();
+    else if (e.key === 'ArrowRight') isRTL ? prevLeaf() : nextLeaf();
     else if (e.key === 'Escape') closeModal();
   };
+  document.addEventListener('keydown', _activeKeydownHandler);
+}
+
+/* ✅ ربط الضغط على الغلاف المقفول */
+function attachCoverClickHandler() {
+  const flipbook = document.getElementById('flipbookEl');
+  if (!flipbook) return;
+  const coverLeaf = flipbook.querySelector('.leaf[data-index="0"]');
+  if (coverLeaf) {
+    coverLeaf.addEventListener('click', (e) => {
+      if (flipbook.classList.contains('closed') && !_isAnimating) {
+        e.stopPropagation();
+        openBook();
+      }
+    });
+  }
+}
+
+/* ✅ دالة فتح الكتاب من حالة الإغلاق */
+function openBook() {
+  const flipbook = document.getElementById('flipbookEl');
+  if (!flipbook || !flipbook.classList.contains('closed')) return;
+  if (_isAnimating) return;
+  _isAnimating = true;
+
+  // إزالة الكلاس closed (يظهر باقي الأوراق)
+  flipbook.classList.remove('closed');
+
+  // إعادة حساب z-index
+  applyZIndexes();
+
+  // بعد انتهاء الأنيميشن، اقلب أول ورقة
+  setTimeout(() => {
+    if (viewerLeafIndex < viewerLeaves.length) {
+      viewerLeafIndex++;
+      updateLeavesState();
+    }
+    _isAnimating = false;
+  }, 1050);
 }
 
 function renderViewerPage(page, pageIndex, d, paperClass, baseStyle, side) {
@@ -1625,75 +2035,80 @@ function renderViewerPage(page, pageIndex, d, paperClass, baseStyle, side) {
 
   if (page.type === 'frontCover') {
     if (page.cover) {
-      return `
-        <div class="page-content cover-full" style="padding:0;position:relative;background:#000">
-          <img src="${page.cover}" style="width:100%;height:100%;object-fit:cover;display:block">
-        </div>`;
-    }
-    return `
-      <div class="page-content cover-full" style="padding:0;position:relative;background:linear-gradient(135deg,#8b5e34,#5c3d1f);display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;color:white">
-        <div style="position:absolute;inset:20px;border:2px solid rgba(212,163,115,0.6);border-radius:8px;pointer-events:none"></div>
-        <div style="padding:60px 40px;position:relative;z-index:1">
-          <h1 style="font-family:'Amiri',serif;font-size:2.3em;margin-bottom:24px;color:#d4a373;text-shadow:0 2px 10px rgba(0,0,0,0.4)">${escapeHtml(page.title)}</h1>
-          <div style="width:80px;height:2px;background:#d4a373;margin:0 auto 24px"></div>
-          ${page.author ? `<p style="font-size:1.2em;opacity:0.9;letter-spacing:2px">${escapeHtml(page.author)}</p>` : ''}
-        </div>
+      return `<div class="page-content cover-full" style="padding:0;position:relative;background:#000">
+        <img src="${page.cover}" style="width:100%;height:100%;object-fit:cover;display:block">
       </div>`;
+    }
+    return `<div class="page-content cover-full" style="padding:0;position:relative;background:linear-gradient(135deg,#8b5e34,#5c3d1f);display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;color:white">
+      <div style="position:absolute;inset:20px;border:2px solid rgba(212,163,115,0.6);border-radius:8px;pointer-events:none"></div>
+      <div style="padding:60px 40px;position:relative;z-index:1">
+        <h1 style="font-family:'Amiri',serif;font-size:2.3em;margin-bottom:24px;color:#d4a373;text-shadow:0 2px 10px rgba(0,0,0,0.4)">${escapeHtml(page.title)}</h1>
+        <div style="width:80px;height:2px;background:#d4a373;margin:0 auto 24px"></div>
+        ${page.author ? `<p style="font-size:1.2em;opacity:0.9;letter-spacing:2px">${escapeHtml(page.author)}</p>` : ''}
+      </div>
+    </div>`;
   }
 
   if (page.type === 'backCover') {
     if (page.cover) {
-      return `
-        <div class="page-content cover-full" style="padding:0;position:relative;background:#000">
-          <img src="${page.cover}" style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(0.55)">
-          <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.2) 100%);display:flex;flex-direction:column;justify-content:flex-end;padding:40px;color:white">
-            <h2 style="font-family:'Amiri',serif;font-size:1.8em;margin-bottom:12px;color:#d4a373">${escapeHtml(page.title)}</h2>
-            ${page.author ? `<p style="font-size:1em;opacity:0.9;margin-bottom:20px;letter-spacing:1px">${escapeHtml(page.author)}</p>` : ''}
-            ${page.description ? `<p style="font-size:0.9em;line-height:1.8;opacity:0.95;margin-top:20px;border-top:1px solid rgba(212,163,115,0.4);padding-top:20px">${escapeHtml(page.description)}</p>` : ''}
-          </div>
-        </div>`;
-    }
-    return `
-      <div class="page-content cover-full" style="padding:0;position:relative;background:linear-gradient(135deg,#5c3d1f,#8b5e34);display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;color:white">
-        <div style="position:absolute;inset:20px;border:2px solid rgba(212,163,115,0.6);border-radius:8px;pointer-events:none"></div>
-        <div style="padding:60px 40px;position:relative;z-index:1">
-          <h2 style="font-family:'Amiri',serif;font-size:1.8em;margin-bottom:20px;color:#d4a373">${escapeHtml(page.title)}</h2>
-          ${page.author ? `<p style="font-size:1em;opacity:0.8;margin-bottom:30px">${escapeHtml(page.author)}</p>` : ''}
-          ${page.description ? `<p style="font-size:0.9em;line-height:1.8;opacity:0.85;border-top:1px solid rgba(212,163,115,0.4);padding-top:20px">${escapeHtml(page.description)}</p>` : ''}
-          <div style="margin-top:40px;font-size:24px;opacity:0.5">✦ ✦ ✦</div>
+      return `<div class="page-content cover-full" style="padding:0;position:relative;background:#000">
+        <img src="${page.cover}" style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(0.55)">
+        <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.2) 100%);display:flex;flex-direction:column;justify-content:flex-end;padding:40px;color:white">
+          <h2 style="font-family:'Amiri',serif;font-size:1.8em;margin-bottom:12px;color:#d4a373">${escapeHtml(page.title)}</h2>
+          ${page.author ? `<p style="font-size:1em;opacity:0.9;margin-bottom:20px;letter-spacing:1px">${escapeHtml(page.author)}</p>` : ''}
+          ${page.description ? `<p style="font-size:0.9em;line-height:1.8;opacity:0.95;margin-top:20px;border-top:1px solid rgba(212,163,115,0.4);padding-top:20px">${escapeHtml(page.description)}</p>` : ''}
         </div>
       </div>`;
+    }
+    return `<div class="page-content cover-full" style="padding:0;position:relative;background:linear-gradient(135deg,#5c3d1f,#8b5e34);display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;color:white">
+      <div style="position:absolute;inset:20px;border:2px solid rgba(212,163,115,0.6);border-radius:8px;pointer-events:none"></div>
+      <div style="padding:60px 40px;position:relative;z-index:1">
+        <h2 style="font-family:'Amiri',serif;font-size:1.8em;margin-bottom:20px;color:#d4a373">${escapeHtml(page.title)}</h2>
+        ${page.author ? `<p style="font-size:1em;opacity:0.8;margin-bottom:30px">${escapeHtml(page.author)}</p>` : ''}
+        ${page.description ? `<p style="font-size:0.9em;line-height:1.8;opacity:0.85;border-top:1px solid rgba(212,163,115,0.4);padding-top:20px">${escapeHtml(page.description)}</p>` : ''}
+        <div style="margin-top:40px;font-size:24px;opacity:0.5">✦ ✦ ✦</div>
+      </div>
+    </div>`;
   }
 
   if (page.type === 'title') {
-    return `
-      <div class="page-content ${paperClass}" style="${baseStyle};padding:${isMobile ? 24 : d.margin}px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">
-        <h1 style="font-size:2em;margin-bottom:20px">${escapeHtml(page.title)}</h1>
-        ${page.author ? `<p style="font-size:1.2em;opacity:0.7;margin-bottom:16px">${escapeHtml(page.author)}</p>` : ''}
-        ${page.category ? `<p style="opacity:0.5">${escapeHtml(page.category)}</p>` : ''}
-      </div>`;
+    return `<div class="page-content ${paperClass}" style="${baseStyle};padding:${isMobile ? 24 : d.margin}px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">
+      <h1 style="font-size:2em;margin-bottom:20px">${escapeHtml(page.title)}</h1>
+      ${page.author ? `<p style="font-size:1.2em;opacity:0.7;margin-bottom:16px">${escapeHtml(page.author)}</p>` : ''}
+      ${page.category ? `<p style="opacity:0.5">${escapeHtml(page.category)}</p>` : ''}
+    </div>`;
   }
 
   if (page.type === 'endPage') {
-    return `
-      <div class="page-content ${paperClass}" style="${baseStyle};padding:${isMobile ? 24 : d.margin}px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">
-        <div style="font-size:48px;margin-bottom:20px;opacity:0.5">✦</div>
-        <h2 style="font-family:'Amiri',serif;font-size:1.5em;margin-bottom:16px;opacity:0.7">النهاية</h2>
-        <p style="font-size:0.9em;opacity:0.5;line-height:1.8;max-width:80%">شكراً لقراءتك "${escapeHtml(page.title)}"</p>
-      </div>`;
+    return `<div class="page-content ${paperClass}" style="${baseStyle};padding:${isMobile ? 24 : d.margin}px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">
+      <div style="font-size:48px;margin-bottom:20px;opacity:0.5">✦</div>
+      <h2 style="font-family:'Amiri',serif;font-size:1.5em;margin-bottom:16px;opacity:0.7">النهاية</h2>
+      <p style="font-size:0.9em;opacity:0.5;line-height:1.8;max-width:80%">شكراً لقراءتك "${escapeHtml(page.title)}"</p>
+    </div>`;
   }
 
   return `
     <div class="page-content ${paperClass}" style="${baseStyle};padding:${isMobile ? 24 : d.margin}px">
       ${d.headerText ? `<div class="page-header">${escapeHtml(d.headerText)}</div>` : ''}
-      ${page.chapterTitle ? `<h2 style="margin-bottom:16px;font-size:1.4em">${escapeHtml(page.chapterTitle)}</h2>` : ''}
-      <p style="white-space:pre-wrap;overflow-wrap:break-word">${escapeHtml(page.content) || ''}</p>
+      <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column">
+        ${page.chapterTitle ? `<h2 style="margin:0 0 14px 0;font-size:1.4em;flex-shrink:0">${escapeHtml(page.chapterTitle)}</h2>` : ''}
+        <div style="white-space:pre-wrap;overflow-wrap:break-word;word-wrap:break-word;margin:0;padding:0;font-family:inherit">${escapeHtml(page.content) || ''}</div>
+      </div>
       ${d.footerText ? `<div class="page-footer">${escapeHtml(d.footerText)}</div>` : ''}
-    </div>
-    ${d.showPageNumbers && pageIndex >= 0 ? `<div class="page-num">${pageIndex + 1}</div>` : ''}`;
+      ${d.showPageNumbers && pageIndex >= 0 ? `<div class="page-num">${pageIndex + 1}</div>` : ''}
+    </div>`;
 }
 
 function nextLeaf() {
+  if (_isAnimating) return;
+  const flipbook = document.getElementById('flipbookEl');
+
+  // لو الكتاب مقفول: افتحه
+  if (flipbook && flipbook.classList.contains('closed')) {
+    openBook();
+    return;
+  }
+
   if (viewerLeafIndex < viewerLeaves.length) {
     viewerLeafIndex++;
     updateLeavesState();
@@ -1701,6 +2116,22 @@ function nextLeaf() {
 }
 
 function prevLeaf() {
+  if (_isAnimating) return;
+  const flipbook = document.getElementById('flipbookEl');
+
+  // لو رجعنا لأول ورقة: اقفل الكتاب
+  if (viewerLeafIndex === 1 && flipbook) {
+    viewerLeafIndex = 0;
+    updateLeavesState();
+    _isAnimating = true;
+    setTimeout(() => {
+      flipbook.classList.add('closed');
+      updateLeavesState();
+      _isAnimating = false;
+    }, 500);
+    return;
+  }
+
   if (viewerLeafIndex > 0) {
     viewerLeafIndex--;
     updateLeavesState();
@@ -1708,44 +2139,94 @@ function prevLeaf() {
 }
 
 function updateLeavesState() {
+  const d = viewerBook?.design || {};
+  const isRTL = d.direction === 'rtl';
   const totalLeaves = viewerLeaves.length;
+  const flipbook = document.getElementById('flipbookEl');
+  const isClosed = flipbook && flipbook.classList.contains('closed');
+
+  // تحديث حالة القلب
   document.querySelectorAll('.leaf').forEach(leaf => {
     const i = parseInt(leaf.dataset.index);
     const isFlipped = i < viewerLeafIndex;
     leaf.classList.toggle('flipped', isFlipped);
-    leaf.style.zIndex = isFlipped ? i : (totalLeaves + (totalLeaves - i));
   });
 
+  applyZIndexes();
+
+  // معلومات الصفحة
   const infoEl = document.getElementById('pageInfo');
   if (infoEl) {
-    if (viewerLeafIndex === 0) {
-      infoEl.textContent = '📕 الغلاف الأمامي — اضغط "التالي" للفتح';
+    if (isClosed || viewerLeafIndex === 0) {
+      infoEl.textContent = '📕 الكتاب مقفول — اضغط على الغلاف لفتحه';
     } else if (viewerLeafIndex >= totalLeaves) {
       infoEl.textContent = '📕 الغلاف الخلفي — الكتاب مغلق';
     } else {
       const leftLeaf = viewerLeaves[viewerLeafIndex - 1];
       const rightLeaf = viewerLeaves[viewerLeafIndex];
-
       const leftIdx = leftLeaf ? leftLeaf.backIndex : -1;
       const rightIdx = rightLeaf ? rightLeaf.frontIndex : -1;
-
       const parts = [];
-      if (rightIdx >= 0) parts.push(`صفحة ${rightIdx + 1}`);
-      if (leftIdx >= 0) parts.push(`صفحة ${leftIdx + 1}`);
+      if (isRTL) {
+        if (rightIdx >= 0) parts.push(`صفحة ${rightIdx + 1}`);
+        if (leftIdx >= 0) parts.push(`صفحة ${leftIdx + 1}`);
+      } else {
+        if (leftIdx >= 0) parts.push(`صفحة ${leftIdx + 1}`);
+        if (rightIdx >= 0) parts.push(`صفحة ${rightIdx + 1}`);
+      }
       infoEl.textContent = `📄 ${parts.join(' — ')}`;
     }
   }
 
+  // الأزرار
   const prevBtn = document.getElementById('prevBtn');
   const nextBtn = document.getElementById('nextBtn');
-  if (prevBtn) prevBtn.disabled = viewerLeafIndex === 0;
-  if (nextBtn) nextBtn.disabled = viewerLeafIndex >= totalLeaves;
+
+  if (prevBtn) {
+    prevBtn.disabled = (viewerLeafIndex === 0 && !isClosed) || _isAnimating;
+  }
+  if (nextBtn) {
+    nextBtn.disabled = viewerLeafIndex >= totalLeaves || _isAnimating;
+    if (isClosed || viewerLeafIndex === 0) {
+      nextBtn.textContent = '📖 فتح الكتاب →';
+    } else if (viewerLeafIndex >= totalLeaves) {
+      nextBtn.textContent = 'انتهى الكتاب';
+    } else {
+      nextBtn.textContent = 'التالي →';
+    }
+  }
+}
+
+/* ✅ z-index الصحيح */
+function applyZIndexes() {
+  const d = viewerBook?.design || {};
+  const isRTL = d.direction === 'rtl';
+  const totalLeaves = viewerLeaves.length;
+  const flipbook = document.getElementById('flipbookEl');
+  const isClosed = flipbook && flipbook.classList.contains('closed');
+
+  document.querySelectorAll('.leaf').forEach(leaf => {
+    const i = parseInt(leaf.dataset.index);
+    const isFlipped = i < viewerLeafIndex;
+
+    // لو الكتاب مقفول: أول ورقة فوق كل حاجة
+    if (isClosed) {
+      leaf.style.zIndex = i === 0 ? 999 : 1;
+      return;
+    }
+
+    // RTL: الورقة 0 هي الأولى (الغلاف) — z-index عالي
+    if (isRTL) {
+      leaf.style.zIndex = isFlipped ? (i + 1) : (totalLeaves - i);
+    } else {
+      leaf.style.zIndex = isFlipped ? (totalLeaves - i) : (i + 1);
+    }
+  });
 }
 
 /* ============================================================
-   📄 PDF EXPORT — نسخة محسّنة (عربي + RTL + خطوط)
+   📄 PDF EXPORT — jsPDF + html2canvas
    ============================================================ */
-
 async function waitForFonts() {
   if (!document.fonts) return;
   try {
@@ -1753,6 +2234,7 @@ async function waitForFonts() {
       document.fonts.load('16px Amiri'),
       document.fonts.load('16px Cairo'),
       document.fonts.load('16px Tajawal'),
+      document.fonts.load('16px Scheherazade New'),
       document.fonts.load('bold 16px Amiri'),
       document.fonts.load('bold 16px Cairo')
     ]);
@@ -1763,13 +2245,8 @@ async function waitForFonts() {
 }
 
 function safeFileName(name) {
-  const cleaned = (name || 'book')
-    .replace(/[\\/:*?"<>|]/g, '')
-    .replace(/\s+/g, '_')
-    .trim();
-  if (/[\u0600-\u06FF]/.test(cleaned)) {
-    return 'kitab_' + Date.now() + '.pdf';
-  }
+  const cleaned = (name || 'book').replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_').trim();
+  if (/[\u0600-\u06FF]/.test(cleaned)) return 'kitab_' + Date.now() + '.pdf';
   return (cleaned || 'book') + '.pdf';
 }
 
@@ -1779,22 +2256,17 @@ function showPDFProgress(text = 'جاري التصدير...') {
     el = document.createElement('div');
     el.id = 'pdfProgress';
     el.className = 'pdf-progress-overlay';
-    el.innerHTML = `
-      <div class="pdf-progress-spinner"></div>
-      <div id="pdfProgressText" class="pdf-progress-text">${text}</div>
-    `;
+    el.innerHTML = `<div class="pdf-progress-spinner"></div><div id="pdfProgressText" class="pdf-progress-text">${text}</div>`;
     document.body.appendChild(el);
   } else {
     el.style.display = 'flex';
     document.getElementById('pdfProgressText').textContent = text;
   }
 }
-
 function updatePDFProgress(text) {
   const el = document.getElementById('pdfProgressText');
   if (el) el.textContent = text;
 }
-
 function hidePDFProgress() {
   const el = document.getElementById('pdfProgress');
   if (el) el.remove();
@@ -1804,10 +2276,11 @@ async function exportPDF(id) {
   const b = getBook(id);
   if (!b) return;
 
-  const d = b.design || defaultDesign();
+  const d = { ...(b.design || defaultDesign()) };
+  d.direction = detectBookDirection(b);
   const pages = buildPages(b);
 
-  if (pages.length === 0) {
+  if (!pages || pages.length === 0) {
     toast('لا يوجد محتوى للتصدير', 'error');
     return;
   }
@@ -1821,97 +2294,96 @@ async function exportPDF(id) {
     const dims = PAGE_DIMENSIONS[d.pageSize] || PAGE_DIMENSIONS['A5'];
     const widthMm = dims.width;
     const heightMm = dims.height;
+    const pxW = Math.round(widthMm * MM_TO_PX);
+    const pxH = Math.round(heightMm * MM_TO_PX);
 
-    const wrap = document.createElement('div');
-    wrap.style.cssText = `
+    const stage = document.createElement('div');
+    stage.style.cssText = `
       position: fixed;
-      left: -99999px;
       top: 0;
-      width: ${widthMm}mm;
-      background: ${d.paperStyle === 'vintage' ? '#f5ecd7' : d.pageColor};
-      font-family: '${d.fontFamily}', 'Amiri', sans-serif;
-      direction: ${d.direction};
-      z-index: -1;
+      left: 0;
+      width: ${pxW}px;
+      height: ${pxH}px;
+      z-index: -9999;
+      opacity: 0.01;
+      pointer-events: none;
+      overflow: hidden;
     `;
+    document.body.appendChild(stage);
 
-    pages.forEach((p, i) => {
-      const page = document.createElement('div');
-      page.className = 'html2pdf__page-break';
-      page.style.cssText = `
-        width: ${widthMm}mm;
-        height: ${heightMm}mm;
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({
+      unit: 'mm',
+      format: [widthMm, heightMm],
+      orientation: 'portrait',
+      compress: true
+    });
+
+    const total = pages.length;
+    const bgColor = d.paperStyle === 'vintage' ? '#f5ecd7' : d.pageColor;
+
+    for (let i = 0; i < total; i++) {
+      updatePDFProgress(`جاري تصدير الصفحة ${i + 1} من ${total}...`);
+
+      const pageEl = document.createElement('div');
+      pageEl.style.cssText = `
+        width: ${pxW}px;
+        height: ${pxH}px;
         box-sizing: border-box;
         position: relative;
         overflow: hidden;
-        background-color: ${d.paperStyle === 'vintage' ? '#f5ecd7' : d.pageColor};
+        background-color: ${bgColor};
         color: ${d.textColor};
         font-family: '${d.fontFamily}', 'Amiri', sans-serif;
         font-size: ${d.fontSize}px;
         line-height: ${d.lineHeight};
         direction: ${d.direction};
         text-align: ${d.direction === 'rtl' ? 'right' : 'left'};
-        page-break-after: always;
-        break-after: page;
       `;
 
       if (d.paperStyle === 'lined') {
         const linePx = d.lineHeight * d.fontSize;
-        page.style.backgroundImage = `repeating-linear-gradient(transparent, transparent ${linePx - 1}px, #e5e7eb ${linePx}px)`;
-        page.style.backgroundPosition = `0 ${d.margin}px`;
+        pageEl.style.backgroundImage = `repeating-linear-gradient(transparent, transparent ${linePx - 1}px, #e5e7eb ${linePx}px)`;
       } else if (d.paperStyle === 'dotted') {
-        page.style.backgroundImage = 'radial-gradient(#cbd5e1 1px, transparent 1px)';
-        page.style.backgroundSize = '20px 20px';
+        pageEl.style.backgroundImage = 'radial-gradient(#cbd5e1 1px, transparent 1px)';
+        pageEl.style.backgroundSize = '20px 20px';
       }
 
-      page.innerHTML = buildPDFPageHTML(p, d, i);
-      wrap.appendChild(page);
-    });
+      pageEl.innerHTML = buildPDFPageHTML(pages[i], d, i);
+      stage.innerHTML = '';
+      stage.appendChild(pageEl);
 
-    document.body.appendChild(wrap);
+      await new Promise(r => setTimeout(r, 60));
 
-    await new Promise(resolve => setTimeout(resolve, 400));
+      const canvas = await html2canvas(pageEl, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: bgColor,
+        logging: false,
+        width: pxW,
+        height: pxH,
+        windowWidth: pxW,
+        windowHeight: pxH
+      });
 
-    updatePDFProgress(`جاري التصدير (${pages.length} صفحة)...`);
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+
+      if (i > 0) pdf.addPage([widthMm, heightMm], 'portrait');
+      pdf.addImage(imgData, 'JPEG', 0, 0, widthMm, heightMm, undefined, 'FAST');
+    }
+
+    document.body.removeChild(stage);
 
     const fileName = safeFileName(b.title);
+    pdf.save(fileName);
 
-    const opt = {
-      margin: 0,
-      filename: fileName,
-      image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: {
-        scale: 2,
-        useCORS: false,
-        allowTaint: true,
-        backgroundColor: d.paperStyle === 'vintage' ? '#f5ecd7' : d.pageColor,
-        logging: false,
-        windowWidth: Math.round(widthMm * 3.78),
-        windowHeight: Math.round(heightMm * 3.78),
-        scrollX: 0,
-        scrollY: 0,
-        removeContainer: true
-      },
-      jsPDF: {
-        unit: 'mm',
-        format: [widthMm, heightMm],
-        orientation: 'portrait',
-        compress: true,
-        hotfixes: ['px_scaling']
-      },
-      pagebreak: { mode: ['css', 'legacy'] }
-    };
-
-    await html2pdf().set(opt).from(wrap).save();
-
-    document.body.removeChild(wrap);
     hidePDFProgress();
     toast('تم تصدير PDF بنجاح ✅', 'success');
-
   } catch (err) {
     console.error('PDF Export Error:', err);
     hidePDFProgress();
-    const leftover = document.querySelector('div[style*="-99999px"]');
-    if (leftover) leftover.remove();
+    document.querySelectorAll('div[style*="-9999"]').forEach(el => el.remove());
     toast('فشل التصدير: ' + (err.message || 'خطأ غير معروف'), 'error');
   }
 }
@@ -1920,91 +2392,71 @@ function buildPDFPageHTML(p, d, pageIndex) {
   const pad = d.margin;
   const align = d.direction === 'rtl' ? 'right' : 'left';
 
-  // الغلاف الأمامي
   if (p.type === 'frontCover') {
     if (p.cover) {
-      return `<img src="${p.cover}" style="width:100%;height:100%;object-fit:cover;display:block">`;
+      return `<img src="${p.cover}" style="width:100%;height:100%;object-fit:cover;display:block" crossorigin="anonymous">`;
     }
-    return `
-      <div style="width:100%;height:100%;background:linear-gradient(135deg,#8b5e34,#5c3d1f);
-                  display:flex;flex-direction:column;justify-content:center;align-items:center;
-                  text-align:center;color:white;position:relative;box-sizing:border-box;padding:60px">
-        <div style="position:absolute;inset:20px;border:2px solid rgba(212,163,115,0.6);border-radius:8px;"></div>
-        <h1 style="font-family:'Amiri',serif;font-size:2.3em;color:#d4a373;margin:0 0 24px 0;
-                   text-shadow:0 2px 10px rgba(0,0,0,0.4)">${escapeHtml(p.title)}</h1>
-        <div style="width:80px;height:2px;background:#d4a373;margin-bottom:24px"></div>
-        ${p.author ? `<p style="font-size:1.2em;opacity:0.9;margin:0">${escapeHtml(p.author)}</p>` : ''}
-      </div>`;
+    return `<div style="width:100%;height:100%;background:linear-gradient(135deg,#8b5e34,#5c3d1f);display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;color:white;position:relative;box-sizing:border-box;padding:60px">
+      <div style="position:absolute;inset:20px;border:2px solid rgba(212,163,115,0.6);border-radius:8px;"></div>
+      <h1 style="font-family:'Amiri',serif;font-size:2.3em;color:#d4a373;margin:0 0 24px 0;text-shadow:0 2px 10px rgba(0,0,0,0.4)">${escapeHtml(p.title)}</h1>
+      <div style="width:80px;height:2px;background:#d4a373;margin-bottom:24px"></div>
+      ${p.author ? `<p style="font-size:1.2em;opacity:0.9;margin:0">${escapeHtml(p.author)}</p>` : ''}
+    </div>`;
   }
 
-  // الغلاف الخلفي
   if (p.type === 'backCover') {
     if (p.cover) {
-      return `
-        <div style="width:100%;height:100%;position:relative;overflow:hidden">
-          <img src="${p.cover}" style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(0.55)">
-          <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.92),transparent);
-                      display:flex;flex-direction:column;justify-content:flex-end;padding:40px;color:white;box-sizing:border-box">
-            <h2 style="font-family:'Amiri',serif;font-size:1.8em;color:#d4a373;margin:0 0 16px 0">${escapeHtml(p.title)}</h2>
-            ${p.author ? `<p style="opacity:0.9;margin:0 0 20px 0">${escapeHtml(p.author)}</p>` : ''}
-            ${p.description ? `<p style="font-size:0.9em;line-height:1.8;border-top:1px solid rgba(212,163,115,0.4);padding-top:20px;margin:0">${escapeHtml(p.description)}</p>` : ''}
-          </div>
-        </div>`;
+      return `<div style="width:100%;height:100%;position:relative;overflow:hidden">
+        <img src="${p.cover}" style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(0.55)" crossorigin="anonymous">
+        <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.92),transparent);display:flex;flex-direction:column;justify-content:flex-end;padding:40px;color:white;box-sizing:border-box">
+          <h2 style="font-family:'Amiri',serif;font-size:1.8em;color:#d4a373;margin:0 0 16px 0">${escapeHtml(p.title)}</h2>
+          ${p.author ? `<p style="opacity:0.9;margin:0 0 20px 0">${escapeHtml(p.author)}</p>` : ''}
+          ${p.description ? `<p style="font-size:0.9em;line-height:1.8;border-top:1px solid rgba(212,163,115,0.4);padding-top:20px;margin:0">${escapeHtml(p.description)}</p>` : ''}
+        </div>
+      </div>`;
     }
-    return `
-      <div style="width:100%;height:100%;background:linear-gradient(135deg,#5c3d1f,#8b5e34);
-                  display:flex;flex-direction:column;justify-content:center;align-items:center;
-                  text-align:center;color:white;padding:60px;box-sizing:border-box;position:relative">
-        <div style="position:absolute;inset:20px;border:2px solid rgba(212,163,115,0.6);border-radius:8px;"></div>
-        <h2 style="font-family:'Amiri',serif;font-size:1.8em;color:#d4a373;margin:0 0 20px 0">${escapeHtml(p.title)}</h2>
-        ${p.author ? `<p style="font-size:1em;opacity:0.8;margin:0 0 30px 0">${escapeHtml(p.author)}</p>` : ''}
-        ${p.description ? `<p style="font-size:0.9em;line-height:1.8;opacity:0.85;border-top:1px solid rgba(212,163,115,0.4);padding-top:20px;margin:0">${escapeHtml(p.description)}</p>` : ''}
-      </div>`;
-  }
-
-  // صفحة العنوان
-  if (p.type === 'title') {
-    return `
-      <div style="width:100%;height:100%;padding:${pad}px;box-sizing:border-box;
-                  display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">
-        <h1 style="font-size:2em;margin:0 0 20px 0">${escapeHtml(p.title)}</h1>
-        ${p.author ? `<p style="font-size:1.2em;opacity:0.7;margin:0 0 16px 0">${escapeHtml(p.author)}</p>` : ''}
-        ${p.category ? `<p style="opacity:0.5;margin:0">${escapeHtml(p.category)}</p>` : ''}
-      </div>`;
-  }
-
-  // صفحة النهاية
-  if (p.type === 'endPage') {
-    return `
-      <div style="width:100%;height:100%;padding:${pad}px;box-sizing:border-box;
-                  display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">
-        <div style="font-size:48px;opacity:0.5;margin-bottom:20px">✦</div>
-        <h2 style="font-family:'Amiri',serif;font-size:1.5em;opacity:0.7;margin:0 0 16px 0">النهاية</h2>
-        <p style="font-size:0.9em;opacity:0.5;line-height:1.8;margin:0">شكراً لقراءتك "${escapeHtml(p.title)}"</p>
-      </div>`;
-  }
-
-  // صفحات المحتوى
-  return `
-    <div style="width:100%;height:100%;padding:${pad}px;box-sizing:border-box;
-                display:flex;flex-direction:column;position:relative;text-align:${align}">
-      ${d.headerText ? `
-        <div style="font-size:11px;color:#999;text-align:center;
-                    padding-bottom:8px;flex-shrink:0">${escapeHtml(d.headerText)}</div>` : ''}
-      <div style="flex:1;overflow:hidden">
-        ${p.chapterTitle ? `<h2 style="margin:0 0 16px 0;font-size:1.4em;font-family:'${d.fontFamily}',serif">${escapeHtml(p.chapterTitle)}</h2>` : ''}
-        <div style="white-space:pre-wrap;overflow-wrap:break-word">${escapeHtml(p.content) || ''}</div>
-      </div>
-      ${d.footerText ? `
-        <div style="font-size:11px;color:#aaa;text-align:center;border-top:1px solid #eee;
-                    padding-top:8px;flex-shrink:0">${escapeHtml(d.footerText)}</div>` : ''}
-      ${d.showPageNumbers && pageIndex >= 0 ? `
-        <div style="position:absolute;bottom:${pad/4}px;${d.direction === 'rtl' ? 'left' : 'right'}:${pad}px;
-                    font-size:11px;color:#999">${pageIndex + 1}</div>` : ''}
+    return `<div style="width:100%;height:100%;background:linear-gradient(135deg,#5c3d1f,#8b5e34);display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;color:white;padding:60px;box-sizing:border-box;position:relative">
+      <div style="position:absolute;inset:20px;border:2px solid rgba(212,163,115,0.6);border-radius:8px;"></div>
+      <h2 style="font-family:'Amiri',serif;font-size:1.8em;color:#d4a373;margin:0 0 20px 0">${escapeHtml(p.title)}</h2>
+      ${p.author ? `<p style="font-size:1em;opacity:0.8;margin:0 0 30px 0">${escapeHtml(p.author)}</p>` : ''}
+      ${p.description ? `<p style="font-size:0.9em;line-height:1.8;opacity:0.85;border-top:1px solid rgba(212,163,115,0.4);padding-top:20px;margin:0">${escapeHtml(p.description)}</p>` : ''}
     </div>`;
+  }
+
+  if (p.type === 'title') {
+    return `<div style="width:100%;height:100%;padding:${pad}px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">
+      <h1 style="font-size:2em;margin:0 0 20px 0">${escapeHtml(p.title)}</h1>
+      ${p.author ? `<p style="font-size:1.2em;opacity:0.7;margin:0 0 16px 0">${escapeHtml(p.author)}</p>` : ''}
+      ${p.category ? `<p style="opacity:0.5;margin:0">${escapeHtml(p.category)}</p>` : ''}
+    </div>`;
+  }
+
+  if (p.type === 'endPage') {
+    return `<div style="width:100%;height:100%;padding:${pad}px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">
+      <div style="font-size:48px;opacity:0.5;margin-bottom:20px">✦</div>
+      <h2 style="font-family:'Amiri',serif;font-size:1.5em;opacity:0.7;margin:0 0 16px 0">النهاية</h2>
+      <p style="font-size:0.9em;opacity:0.5;line-height:1.8;margin:0">شكراً لقراءتك "${escapeHtml(p.title)}"</p>
+    </div>`;
+  }
+
+  if (p.type === 'blank') {
+    return `<div style="width:100%;height:100%"></div>`;
+  }
+
+  return `<div style="width:100%;height:100%;padding:${pad}px;box-sizing:border-box;display:flex;flex-direction:column;position:relative;text-align:${align}">
+    ${d.headerText ? `<div style="font-size:11px;color:#999;text-align:center;padding-bottom:8px;flex-shrink:0">${escapeHtml(d.headerText)}</div>` : ''}
+    <div style="flex:1;overflow:hidden;min-height:0">
+      ${p.chapterTitle ? `<h2 style="margin:0 0 14px 0;font-size:1.4em;font-family:'${d.fontFamily}',serif">${escapeHtml(p.chapterTitle)}</h2>` : ''}
+      <div style="white-space:pre-wrap;overflow-wrap:break-word;margin:0">${escapeHtml(p.content) || ''}</div>
+    </div>
+    ${d.footerText ? `<div style="font-size:11px;color:#aaa;text-align:center;border-top:1px solid #eee;padding-top:8px;flex-shrink:0">${escapeHtml(d.footerText)}</div>` : ''}
+    ${d.showPageNumbers && pageIndex >= 0 ? `<div style="position:absolute;bottom:${Math.max(8, pad/4)}px;${d.direction === 'rtl' ? 'left' : 'right'}:${pad}px;font-size:11px;color:#999">${pageIndex + 1}</div>` : ''}
+  </div>`;
 }
 
-/* ============== RESPONSIVE ============== */
+/* ============================================================
+   📱 RESPONSIVE
+   ============================================================ */
 let resizeTimer;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
@@ -2018,7 +2470,9 @@ window.addEventListener('resize', () => {
   }, 200);
 });
 
-/* ============== SWIPE (RTL-aware) ============== */
+/* ============================================================
+   👆 SWIPE
+   ============================================================ */
 let touchStartX = 0, touchStartY = 0, touchActive = false;
 document.addEventListener('touchstart', e => {
   const modal = document.getElementById('modal');
@@ -2035,14 +2489,22 @@ document.addEventListener('touchend', e => {
   const dx = e.changedTouches[0].clientX - touchStartX;
   const dy = e.changedTouches[0].clientY - touchStartY;
   if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
-    if (dx < 0) nextLeaf();
-    else prevLeaf();
+    const isRTL = (viewerBook?.design?.direction === 'rtl');
+    if (isRTL) {
+      if (dx < 0) nextLeaf();
+      else prevLeaf();
+    } else {
+      if (dx > 0) nextLeaf();
+      else prevLeaf();
+    }
   }
 }, { passive: true });
 
 document.addEventListener('touchcancel', () => { touchActive = false; }, { passive: true });
 
-/* ============== INIT ============== */
+/* ============================================================
+   🚀 INIT
+   ============================================================ */
 window.addEventListener('DOMContentLoaded', () => {
   isMobile = window.innerWidth <= 768;
   seedDefaultBook();

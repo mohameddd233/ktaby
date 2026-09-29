@@ -2,18 +2,32 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
 <meta name="theme-color" content="#5c3d1f" />
-<title>كتابي — نظام إنشاء الكتب الاحترافي</title>
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="كتابي" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="format-detection" content="telephone=no" />
+<title>كتابي — نظام إنشاء الكتب</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Amiri:wght@400;700&family=Tajawal:wght@400;700&family=Scheherazade+New:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:wght@400;700&family=Tajawal:wght@400;700&family=Scheherazade+New:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@7.1.0/build/index.umd.js"></script>
 
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  /* ============================================================
+     🎨 ROOT & RESET
+     ============================================================ */
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
 
   :root {
     --primary: #8b5e34;
@@ -28,95 +42,233 @@
     --danger: #c0392b;
     --success: #27ae60;
     --info: #3498db;
-    --nav-h: 60px;
+    --warning: #f39c12;
+
+    --nav-h: 56px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+
     --shadow-sm: 0 2px 8px rgba(139,94,52,0.08);
     --shadow-md: 0 4px 16px rgba(139,94,52,0.12);
     --shadow-lg: 0 10px 40px rgba(139,94,52,0.18);
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
+
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --radius-lg: 18px;
+
+    /* Fluid typography */
+    --fs-xs: clamp(10px, 2.5vw, 12px);
+    --fs-sm: clamp(12px, 3vw, 14px);
+    --fs-md: clamp(14px, 3.5vw, 16px);
+    --fs-lg: clamp(16px, 4vw, 20px);
+    --fs-xl: clamp(18px, 5vw, 24px);
   }
 
-  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  body.dark-mode {
+    --primary: #d4a373;
+    --primary-dark: #f0d5b0;
+    --primary-light: #b8895a;
+    --accent: #d4a373;
+    --bg: #121212;
+    --card: #1e1e1e;
+    --text: #e8e8e8;
+    --muted: #999;
+    --border: #333;
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.4);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.5);
+    --shadow-lg: 0 10px 40px rgba(0,0,0,0.6);
+  }
 
-  body {
-    font-family: 'Cairo', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    -webkit-font-smoothing: antialiased;
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+    height: 100%;
     overflow-x: hidden;
   }
 
+  body {
+    font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+    overscroll-behavior-y: contain;
+    transition: background 0.3s, color 0.3s;
+    padding-left: var(--safe-left);
+    padding-right: var(--safe-right);
+  }
+
+  /* ============================================================
+     🧭 NAVBAR
+     ============================================================ */
   .navbar {
     background: linear-gradient(135deg, var(--primary-dark), var(--primary));
     color: white;
-    padding: 12px 20px;
+    padding: 8px 12px;
+    padding-top: calc(8px + var(--safe-top));
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
     position: sticky;
     top: 0;
     z-index: 100;
     min-height: var(--nav-h);
+    gap: 6px;
   }
-  .navbar h1 { font-size: 20px; display: flex; align-items: center; gap: 8px; font-weight: 900; }
-  .navbar h1 span { font-size: 24px; }
-  .nav-actions { display: flex; gap: 8px; }
+  .navbar h1 {
+    font-size: var(--fs-md);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 900;
+    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .navbar h1 span { font-size: 1.2em; }
+  .navbar h1 small {
+    font-size: 0.65em;
+    opacity: 0.7;
+    margin-right: 2px;
+    font-weight: 400;
+  }
+  .nav-actions { display: flex; gap: 4px; flex-shrink: 0; }
 
+  /* ============================================================
+     🔘 BUTTONS
+     ============================================================ */
   .btn {
-    padding: 12px 18px;
+    padding: 10px 14px;
     border: none;
     border-radius: var(--radius-sm);
     cursor: pointer;
     font-family: inherit;
     font-weight: 600;
-    font-size: 14px;
+    font-size: var(--fs-sm);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    transition: all 0.15s;
+    gap: 5px;
+    transition: transform 0.1s ease, background 0.2s ease, opacity 0.2s;
     min-height: 44px;
     user-select: none;
     touch-action: manipulation;
     white-space: nowrap;
   }
-  .btn:active { transform: scale(0.97); }
+  .btn:active { transform: scale(0.95); }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .btn-primary { background: var(--accent); color: var(--primary-dark); }
-  .btn-primary:hover:not(:disabled) { background: #e0b083; }
-  .btn-light { background: rgba(255,255,255,0.2); color: white; }
-  .btn-light:hover { background: rgba(255,255,255,0.3); }
+  .btn-light { background: rgba(255,255,255,0.22); color: white; }
   .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
-  .btn-outline:hover { background: var(--primary); color: white; }
   .btn-danger { background: var(--danger); color: white; }
   .btn-success { background: var(--success); color: white; }
   .btn-info { background: var(--info); color: white; }
-  .btn-sm { padding: 8px 12px; font-size: 13px; min-height: 38px; }
-  .btn-xs { padding: 6px 10px; font-size: 12px; min-height: 32px; border-radius: 6px; }
-  .btn-icon { padding: 8px; width: 40px; height: 40px; }
+  .btn-warning { background: var(--warning); color: white; }
+  .btn-sm { padding: 8px 12px; font-size: var(--fs-xs); min-height: 38px; }
+  .btn-xs { padding: 6px 10px; font-size: var(--fs-xs); min-height: 34px; border-radius: 8px; }
+  .btn-icon {
+    padding: 8px;
+    width: 42px;
+    height: 42px;
+    min-height: 42px;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
 
-  .container { max-width: 1300px; margin: 0 auto; padding: 16px; width: 100%; flex: 1; }
+  /* ============================================================
+     📦 CONTAINER
+     ============================================================ */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 12px;
+    padding-bottom: calc(90px + var(--safe-bottom));
+    width: 100%;
+    flex: 1;
+  }
 
+  /* ============================================================
+     📚 LIBRARY
+     ============================================================ */
   .library-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 18px;
-    flex-wrap: wrap;
-    gap: 10px;
+    margin-bottom: 12px;
+    gap: 8px;
   }
-  .library-header h2 { font-size: 22px; color: var(--primary-dark); }
-  .library-header p { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .library-header h2 {
+    font-size: var(--fs-lg);
+    color: var(--primary-dark);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .library-header p {
+    color: var(--muted);
+    font-size: var(--fs-xs);
+    margin-top: 2px;
+  }
 
+  .library-toolbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .library-toolbar input[type="text"] {
+    flex: 1;
+    min-width: 140px;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: var(--fs-md);
+    background: var(--card);
+    color: var(--text);
+    min-height: 46px;
+  }
+  .library-toolbar input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(212,163,115,0.15);
+  }
+  .library-toolbar select {
+    padding: 12px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: var(--fs-sm);
+    background: var(--card);
+    color: var(--text);
+    cursor: pointer;
+    min-height: 46px;
+    flex-shrink: 0;
+  }
+
+  /* ============================================================
+     📖 BOOKS GRID — تخطيط مرن لكل الشاشات
+     ============================================================ */
   .books-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(min(160px, 45%), 1fr));
+    gap: 12px;
+  }
+
+  @media (max-width: 340px) {
+    .books-grid {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
   }
 
   .book-card {
@@ -124,13 +276,35 @@
     border-radius: var(--radius-md);
     overflow: hidden;
     box-shadow: var(--shadow-md);
-    transition: all 0.25s;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
     display: flex;
     flex-direction: column;
     cursor: pointer;
     position: relative;
+    -webkit-tap-highlight-color: transparent;
   }
-  .book-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+  .book-card:active { transform: scale(0.97); }
+
+  .book-favorite {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(255,255,255,0.95);
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .book-favorite:active { transform: scale(0.9); }
+
   .book-cover {
     width: 100%;
     aspect-ratio: 3/4;
@@ -140,7 +314,7 @@
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 40px;
+    font-size: clamp(28px, 10vw, 48px);
     font-family: 'Amiri', serif;
     position: relative;
     overflow: hidden;
@@ -152,56 +326,155 @@
     background: linear-gradient(to right, rgba(0,0,0,0.15), transparent 15%, transparent 85%, rgba(0,0,0,0.15));
     pointer-events: none;
   }
-  .book-info { padding: 10px; flex: 1; display: flex; flex-direction: column; }
+
+  .book-info {
+    padding: 8px 10px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
   .book-info h3 {
-    font-size: 14px;
-    margin-bottom: 4px;
+    font-size: var(--fs-sm);
     color: var(--primary-dark);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-weight: 700;
   }
-  .book-info .author { font-size: 12px; color: var(--muted); margin-bottom: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .book-info .meta { font-size: 11px; color: var(--muted); margin-top: auto; display: flex; justify-content: space-between; }
+  .book-info .author {
+    font-size: var(--fs-xs);
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .book-info .meta {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: auto;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .book-info .meta span {
+    background: rgba(139,94,52,0.08);
+    padding: 2px 6px;
+    border-radius: 6px;
+  }
 
   .card-actions {
     display: flex;
-    gap: 6px;
-    padding: 8px;
-    background: #faf6ef;
+    gap: 4px;
+    padding: 6px;
+    background: rgba(0,0,0,0.03);
     border-top: 1px solid var(--border);
   }
-  .card-actions .btn { flex: 1; padding: 8px 4px; font-size: 12px; min-height: 38px; }
+  .card-actions .btn {
+    flex: 1;
+    padding: 6px 2px;
+    font-size: 14px;
+    min-height: 36px;
+  }
 
-  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
-  .empty-state .icon { font-size: 64px; margin-bottom: 16px; opacity: 0.5; }
-  .empty-state h3 { font-size: 20px; margin-bottom: 8px; color: var(--primary-dark); }
-  .empty-state p { margin-bottom: 20px; }
+  /* ============================================================
+     🎯 EMPTY STATE
+     ============================================================ */
+  .empty-state {
+    text-align: center;
+    padding: 50px 20px;
+    color: var(--muted);
+  }
+  .empty-state .icon {
+    font-size: clamp(48px, 15vw, 80px);
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+  .empty-state h3 {
+    font-size: var(--fs-lg);
+    margin-bottom: 8px;
+    color: var(--primary-dark);
+  }
+  .empty-state p {
+    margin-bottom: 20px;
+    font-size: var(--fs-sm);
+  }
 
-  .editor-layout { display: grid; grid-template-columns: 1fr 340px; gap: 16px; }
+  /* ============================================================
+     ✏️ EDITOR
+     ============================================================ */
+  .editor-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
 
   .panel {
     background: var(--card);
     border-radius: var(--radius-md);
-    padding: 16px;
+    padding: 14px;
     box-shadow: var(--shadow-sm);
-    margin-bottom: 14px;
+    margin-bottom: 12px;
   }
   .panel h3 {
     color: var(--primary-dark);
-    font-size: 16px;
-    margin-bottom: 14px;
+    font-size: var(--fs-md);
+    margin-bottom: 12px;
     padding-bottom: 10px;
     border-bottom: 2px solid var(--border);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
   }
 
+  /* ============================================================
+     📑 TABS — قابلة للتمرير أفقيًا
+     ============================================================ */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 14px;
+    background: rgba(139,94,52,0.06);
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex: 1;
+    min-width: 80px;
+    padding: 10px 6px;
+    text-align: center;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: var(--fs-xs);
+    color: var(--muted);
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    white-space: nowrap;
+    transition: all 0.2s;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tab.active {
+    background: var(--card);
+    color: var(--primary-dark);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+
+  /* ============================================================
+     📝 FORMS
+     ============================================================ */
   .form-group { margin-bottom: 14px; }
   .form-group label {
     display: block;
-    font-size: 13px;
+    font-size: var(--fs-xs);
     font-weight: 600;
     color: var(--primary-dark);
     margin-bottom: 6px;
@@ -216,98 +489,220 @@
     border-radius: var(--radius-sm);
     font-family: inherit;
     font-size: 16px;
-    background: #fdfcf9;
-    transition: border 0.2s;
+    background: var(--card);
     color: var(--text);
-    min-height: 46px;
+    min-height: 48px;
+    transition: border 0.2s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .form-group textarea {
+    resize: vertical;
+    min-height: 140px;
+    line-height: 1.7;
+    font-size: 15px;
   }
   .form-group input:focus,
   .form-group textarea:focus,
   .form-group select:focus {
     outline: none;
     border-color: var(--accent);
-    background: white;
     box-shadow: 0 0 0 3px rgba(212,163,115,0.15);
   }
-  .form-group textarea { resize: vertical; min-height: 120px; line-height: 1.7; }
 
-  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  input[type="color"] {
+    width: 100%;
+    height: 48px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    padding: 4px;
+    background: var(--card);
+  }
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--primary);
+    height: 36px;
+  }
+  input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+    accent-color: var(--primary);
+    vertical-align: middle;
+    margin-left: 6px;
+  }
 
-  input[type="color"] { width: 100%; height: 46px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; padding: 4px; background: white; }
-  input[type="range"] { width: 100%; accent-color: var(--primary); height: 32px; }
-  input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--primary); vertical-align: middle; margin-left: 6px; }
-
+  /* ============================================================
+     📄 CHAPTERS
+     ============================================================ */
   .chapter-item {
-    background: #fdfcf9;
+    background: var(--card);
     border: 1.5px solid var(--border);
     border-radius: var(--radius-sm);
     margin-bottom: 10px;
     overflow: hidden;
-    transition: box-shadow 0.2s;
+    transition: box-shadow 0.2s, opacity 0.2s, transform 0.2s;
   }
-  .chapter-item:hover { box-shadow: var(--shadow-sm); }
+  .chapter-item.dragging { opacity: 0.4; transform: scale(0.97); }
+  .chapter-item.drag-over { border-color: var(--accent); border-style: dashed; }
   .chapter-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 14px;
-    background: #f5efe4;
+    padding: 12px 10px;
+    background: rgba(139,94,52,0.06);
     cursor: pointer;
     font-weight: 600;
-    font-size: 14px;
+    font-size: var(--fs-sm);
     color: var(--primary-dark);
-    min-height: 50px;
-    gap: 8px;
+    min-height: 52px;
+    gap: 6px;
   }
-  .chapter-header span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-  .chapter-body { padding: 12px; display: none; }
+  .chapter-header .ch-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+  .chapter-header .drag-handle {
+    cursor: grab;
+    color: var(--muted);
+    padding: 0 4px;
+    user-select: none;
+    font-size: 16px;
+    touch-action: none;
+  }
+  .chapter-body {
+    padding: 12px;
+    display: none;
+  }
   .chapter-item.open .chapter-body { display: block; }
 
+  /* ============================================================
+     📊 STATS
+     ============================================================ */
   .stats-box {
-    background: linear-gradient(135deg, #f5efe4, #faf6ef);
+    background: linear-gradient(135deg, rgba(139,94,52,0.08), rgba(212,163,115,0.05));
     border: 1.5px solid var(--border);
     border-radius: var(--radius-md);
-    padding: 14px;
+    padding: 12px;
     margin-bottom: 14px;
   }
-  .stats-box h4 { font-size: 14px; color: var(--primary-dark); margin-bottom: 10px; }
-  .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .stats-box h4 {
+    font-size: var(--fs-sm);
+    color: var(--primary-dark);
+    margin-bottom: 10px;
+  }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
   .stat-item {
-    background: white;
+    background: var(--card);
     padding: 8px 10px;
     border-radius: var(--radius-sm);
-    font-size: 12px;
+    font-size: var(--fs-xs);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 6px;
   }
-  .stat-item span:first-child { color: var(--muted); }
-  .stat-item span:last-child { color: var(--primary-dark); font-weight: 700; }
+  .stat-item span:first-child {
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .stat-item span:last-child {
+    color: var(--primary-dark);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
 
-  .preview-page {
-    background: white;
-    padding: 30px;
-    border-radius: 4px;
-    box-shadow: var(--shadow-lg);
-    margin-bottom: 16px;
-    min-height: 400px;
-    position: relative;
-    line-height: 1.8;
-    overflow-wrap: break-word;
+  /* ============================================================
+     🎨 COVER PREVIEW
+     ============================================================ */
+  .cover-preview {
+    width: 100%;
+    aspect-ratio: 3/4;
+    max-height: 240px;
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+    margin-bottom: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    background: rgba(139,94,52,0.03);
+    transition: all 0.2s;
+    text-align: center;
+    padding: 16px;
   }
-  .preview-page.lined {
-    background-image: repeating-linear-gradient(transparent, transparent 33px, #e5e7eb 34px);
-    background-position: 0 30px;
+  .cover-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
-  .preview-page.dotted {
-    background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
-    background-size: 20px 20px;
-  }
-  .preview-page.vintage { background: #f5ecd7; }
 
-  .preview-header, .preview-footer { font-size: 12px; color: #888; text-align: center; padding: 8px 0; }
-  .preview-footer { border-top: 1px solid #eee; margin-top: 20px; }
+  /* ============================================================
+     📱 MOBILE BOTTOM BAR
+     ============================================================ */
+  .mobile-bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--card);
+    border-top: 2px solid var(--border);
+    padding: 8px 10px;
+    padding-bottom: calc(8px + var(--safe-bottom));
+    display: flex;
+    gap: 6px;
+    z-index: 95;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+  }
+  .mobile-bottom-bar .btn {
+    flex: 1;
+    font-size: var(--fs-xs);
+    padding: 8px 4px;
+    min-height: 48px;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .mobile-bottom-bar .btn .icon { font-size: 18px; }
 
+  /* ============================================================
+     🎈 FAB
+     ============================================================ */
+  .fab {
+    position: fixed;
+    bottom: calc(90px + var(--safe-bottom));
+    left: 16px;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    border: none;
+    font-size: 28px;
+    box-shadow: 0 8px 24px rgba(139,94,52,0.4);
+    cursor: pointer;
+    z-index: 90;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s;
+  }
+  .fab:active { transform: scale(0.9); }
+
+  /* ============================================================
+     🪟 MODAL
+     ============================================================ */
   .modal-overlay {
     position: fixed;
     inset: 0;
@@ -316,39 +711,59 @@
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    padding: 16px;
-    overflow-y: auto;
+    padding: 0;
+    overflow: hidden;
     backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
   .modal-overlay.active { display: flex; animation: fadeIn 0.2s ease; }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
   .modal {
-    background: white;
-    border-radius: var(--radius-lg);
-    max-width: 1200px;
+    background: var(--card);
+    border-radius: 0;
+    max-width: 100%;
     width: 100%;
-    max-height: 94vh;
+    height: 100vh;
+    height: 100dvh;
     overflow-y: auto;
-    padding: 20px;
+    padding: 12px;
+    padding-top: calc(12px + var(--safe-top));
+    padding-bottom: calc(12px + var(--safe-bottom));
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
+
   .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
     border-bottom: 2px solid var(--border);
     gap: 10px;
+    position: sticky;
+    top: 0;
+    background: var(--card);
+    z-index: 10;
+    padding-top: 4px;
   }
-  .modal-header h3 { color: var(--primary-dark); font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  .modal-header h3 {
+    color: var(--primary-dark);
+    font-size: var(--fs-md);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
   .close-btn {
     background: rgba(0,0,0,0.05);
     border: none;
-    font-size: 22px;
+    font-size: 24px;
     cursor: pointer;
     color: var(--muted);
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -356,7 +771,7 @@
     flex-shrink: 0;
     transition: all 0.2s;
   }
-  .close-btn:hover { background: rgba(0,0,0,0.1); color: var(--primary-dark); }
+  .close-btn:active { background: rgba(0,0,0,0.15); transform: scale(0.9); }
 
   /* ============================================================
      📖 BOOK VIEWER
@@ -365,15 +780,18 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 20px 0;
-    min-height: 600px;
+    padding: 10px 0;
     perspective: 3000px;
   }
 
   .flipbook {
     position: relative;
-    width: 800px;
-    height: 560px;
+    width: 100%;
+    max-width: 400px;
+    height: 70vh;
+    height: 70dvh;
+    min-height: 400px;
+    max-height: 620px;
     margin: 0 auto;
     transform-style: preserve-3d;
     perspective: 2500px;
@@ -383,35 +801,33 @@
   .flipbook .leaf {
     position: absolute;
     top: 0;
-    width: 50%;
+    width: 100%;
     height: 100%;
     transform-style: preserve-3d;
-    transition: transform 1s cubic-bezier(0.645, 0.045, 0.355, 1),
+    transition: transform 0.9s cubic-bezier(0.645, 0.045, 0.355, 1),
                 opacity 0.5s ease;
     cursor: pointer;
     will-change: transform;
   }
 
-  /* LTR */
-  .flipbook[data-dir="ltr"] .leaf {
-    left: 50%;
-    right: auto;
-    transform-origin: left center;
-    transform: rotateY(0deg);
-  }
-  .flipbook[data-dir="ltr"] .leaf.flipped {
-    transform: rotateY(-180deg);
-  }
-
-  /* RTL */
   .flipbook[data-dir="rtl"] .leaf {
-    right: 50%;
+    right: 0;
     left: auto;
     transform-origin: right center;
     transform: rotateY(0deg);
   }
   .flipbook[data-dir="rtl"] .leaf.flipped {
     transform: rotateY(180deg);
+  }
+
+  .flipbook[data-dir="ltr"] .leaf {
+    left: 0;
+    right: auto;
+    transform-origin: left center;
+    transform: rotateY(0deg);
+  }
+  .flipbook[data-dir="ltr"] .leaf.flipped {
+    transform: rotateY(-180deg);
   }
 
   .flipbook .leaf .face {
@@ -424,16 +840,19 @@
     display: flex;
     flex-direction: column;
     box-shadow: 0 0 20px rgba(0,0,0,0.15);
+    border-radius: 6px;
   }
 
-  .flipbook[data-dir="ltr"] .leaf .face.front { border-radius: 4px 0 0 4px; }
-  .flipbook[data-dir="ltr"] .leaf .face.back  { transform: rotateY(-180deg); border-radius: 0 4px 4px 0; }
-  .flipbook[data-dir="rtl"] .leaf .face.front { border-radius: 0 4px 4px 0; }
-  .flipbook[data-dir="rtl"] .leaf .face.back  { transform: rotateY(180deg); border-radius: 4px 0 0 4px; }
+  .flipbook[data-dir="rtl"] .leaf .face.back {
+    transform: rotateY(180deg);
+  }
+  .flipbook[data-dir="ltr"] .leaf .face.back {
+    transform: rotateY(-180deg);
+  }
 
   .flipbook .leaf .page-content {
     flex: 1;
-    padding: 32px;
+    padding: 20px;
     overflow: hidden;
     line-height: 1.9;
     overflow-wrap: break-word;
@@ -446,55 +865,43 @@
   }
 
   .flipbook .leaf .page-header {
-    font-size: 11px;
+    font-size: 10px;
     color: #999;
     text-align: center;
-    padding: 0 0 10px;
+    padding: 0 0 8px;
     flex-shrink: 0;
   }
 
   .flipbook .leaf .page-footer {
-    font-size: 11px;
+    font-size: 10px;
     color: #aaa;
     text-align: center;
-    padding: 10px 0 0;
+    padding: 8px 0 0;
     border-top: 1px solid #eee;
     flex-shrink: 0;
   }
 
   .flipbook .leaf .page-num {
     position: absolute;
-    bottom: 12px;
-    font-size: 12px;
+    bottom: 10px;
+    font-size: 11px;
     color: #999;
     pointer-events: none;
   }
-  .flipbook[data-dir="ltr"] .leaf .face.front .page-num { left: 20px; }
-  .flipbook[data-dir="ltr"] .leaf .face.back .page-num { right: 20px; }
-  .flipbook[data-dir="rtl"] .leaf .face.front .page-num { right: 20px; }
-  .flipbook[data-dir="rtl"] .leaf .face.back .page-num { left: 20px; }
+  .flipbook[data-dir="rtl"] .leaf .face.front .page-num { right: 16px; }
+  .flipbook[data-dir="rtl"] .leaf .face.back .page-num { left: 16px; }
+  .flipbook[data-dir="ltr"] .leaf .face.front .page-num { left: 16px; }
+  .flipbook[data-dir="ltr"] .leaf .face.back .page-num { right: 16px; }
 
-  .flipbook-bg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, #d8cfb8, #f5efe4, #d8cfb8);
-    border-radius: 6px;
-    box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+  .flipbook.closed .leaf:not([data-index="0"]) {
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
   }
-
-  .flipbook-bg::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 50%;
-    width: 6px;
-    height: 100%;
-    background: linear-gradient(90deg, rgba(0,0,0,0.15), rgba(0,0,0,0.05), rgba(0,0,0,0.15));
-    transform: translateX(-50%);
-    z-index: 1;
+  .flipbook.closed .leaf[data-index="0"] {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
   }
 
   .cover-full {
@@ -503,10 +910,9 @@
     padding: 0 !important;
     margin: 0 !important;
     background: #000;
-    border-radius: inherit;
+    border-radius: 6px;
     overflow: hidden;
   }
-
   .cover-full img {
     width: 100%;
     height: 100%;
@@ -515,298 +921,112 @@
   }
 
   /* ============================================================
-     📕 CLOSED BOOK STATE
+     🎮 VIEWER CONTROLS
      ============================================================ */
-  .flipbook.closed .leaf:not([data-index="0"]) {
-    opacity: 0;
-    pointer-events: none;
-    visibility: hidden;
-  }
-
-  .flipbook.closed .leaf[data-index="0"] {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-  }
-
-  /* RTL: الغلاف على اليمين */
-  .flipbook[data-dir="rtl"].closed .leaf[data-index="0"] {
-    right: 50%;
-    left: auto;
-    transform-origin: right center;
-    transform: rotateY(0deg);
-  }
-
-  /* LTR: الغلاف على اليسار */
-  .flipbook[data-dir="ltr"].closed .leaf[data-index="0"] {
-    left: 50%;
-    right: auto;
-    transform-origin: left center;
-    transform: rotateY(0deg);
-  }
-
-  /* ظل على حرف الكتاب المقفول */
-  .flipbook.closed::after {
-    content: '';
-    position: absolute;
-    top: 3%;
-    bottom: 3%;
-    width: 50%;
-    pointer-events: none;
-    z-index: 500;
-    border-radius: inherit;
-  }
-  .flipbook[data-dir="rtl"].closed::after {
-    right: 50%;
-    background: linear-gradient(90deg, rgba(0,0,0,0.5) 0%, transparent 8%);
-  }
-  .flipbook[data-dir="ltr"].closed::after {
-    left: 50%;
-    background: linear-gradient(270deg, rgba(0,0,0,0.5) 0%, transparent 8%);
-  }
-
-  /* نبضة خفيفة */
-  @keyframes coverPulse {
-    0%, 100% { box-shadow: 0 0 20px rgba(0,0,0,0.15); }
-    50% { box-shadow: 0 0 40px rgba(212,163,115,0.5); }
-  }
-
-  .flipbook.closed .leaf[data-index="0"] .face.front {
-    animation: coverPulse 2.5s ease-in-out infinite;
-  }
-
-  .flipbook.closed .leaf[data-index="0"] .face.front:hover {
-    animation: none;
-    box-shadow: 0 0 50px rgba(212,163,115,0.8);
-  }
-
-  .flipbook .leaf .face::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(270deg, rgba(0,0,0,0.15), transparent 20%);
-    opacity: 1;
-    pointer-events: none;
-    transition: opacity 0.5s;
-  }
-
-  .flipbook .leaf.flipped .face.front::after {
-    opacity: 0;
-  }
-
-  .book-viewer.mobile-mode .flipbook {
-    width: 100%;
-    max-width: 400px;
-    height: 78vh;
-    min-height: 480px;
-  }
-  .book-viewer.mobile-mode .flipbook .leaf {
-    width: 100%;
-  }
-  .book-viewer.mobile-mode .flipbook[data-dir="ltr"] .leaf {
-    left: 0;
-    right: auto;
-  }
-  .book-viewer.mobile-mode .flipbook[data-dir="rtl"] .leaf {
-    right: 0;
-    left: auto;
-  }
-  .book-viewer.mobile-mode .flipbook .leaf .page-content {
-    padding: 20px;
-    font-size: 15px;
-  }
-  .book-viewer.mobile-mode .flipbook-bg::before {
-    display: none;
-  }
-  .book-viewer.mobile-mode .flipbook.closed::after {
-    display: none;
-  }
-
   .viewer-controls {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 12px;
-    margin-top: 20px;
+    gap: 8px;
+    margin-top: 14px;
     flex-wrap: wrap;
   }
-  .viewer-controls .btn { min-width: 140px; }
-  .viewer-controls .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .viewer-controls .btn {
+    min-width: 80px;
+    flex: 1;
+    max-width: 130px;
+  }
 
   .page-indicator {
-    font-size: 13px;
+    font-size: var(--fs-xs);
     color: var(--muted);
     text-align: center;
-    margin-top: 12px;
+    margin-top: 10px;
     font-weight: 600;
-    min-height: 20px;
+    min-height: 18px;
+    padding: 0 8px;
   }
 
-  .cover-preview {
-    width: 100%;
-    aspect-ratio: 3/4;
-    max-height: 260px;
-    border: 2px dashed var(--border);
-    border-radius: var(--radius-md);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--muted);
-    font-size: 14px;
-    margin-bottom: 10px;
-    overflow: hidden;
-    cursor: pointer;
-    background: #faf6ef;
-    transition: all 0.2s;
-  }
-  .cover-preview:hover { border-color: var(--accent); background: #f5efe4; }
-  .cover-preview img { width: 100%; height: 100%; object-fit: cover; }
-
-  .site-footer {
-    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
-    color: white;
-    text-align: center;
-    padding: 18px 16px;
-    font-size: 13px;
-    margin-top: auto;
-  }
-  .site-footer strong { color: var(--accent); font-weight: 700; }
-
-  .tabs {
-    display: flex;
-    gap: 4px;
-    margin-bottom: 16px;
-    background: #f5efe4;
-    padding: 4px;
-    border-radius: var(--radius-sm);
-    overflow-x: auto;
-  }
-  .tab {
-    flex: 1;
-    padding: 10px 8px;
-    text-align: center;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 12px;
-    color: var(--muted);
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    white-space: nowrap;
-    transition: all 0.2s;
-    user-select: none;
-  }
-  .tab:hover { color: var(--primary-dark); }
-  .tab.active { background: white; color: var(--primary-dark); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-
-  .hidden { display: none !important; }
-
-  .toast {
-    position: fixed;
-    bottom: 80px;
-    left: 50%;
-    transform: translateX(-50%) translateY(120px);
-    background: var(--primary-dark);
-    color: white;
-    padding: 12px 22px;
-    border-radius: var(--radius-sm);
-    font-weight: 600;
-    font-size: 14px;
-    z-index: 2000;
-    transition: transform 0.3s;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-    max-width: 90vw;
-    text-align: center;
-  }
-  .toast.show { transform: translateX(-50%) translateY(0); }
-  .toast.success { background: var(--success); }
-  .toast.error { background: var(--danger); }
-
-  .fab {
-    position: fixed;
-    bottom: 90px;
-    left: 20px;
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    color: white;
-    border: none;
-    font-size: 26px;
-    box-shadow: 0 8px 24px rgba(139,94,52,0.4);
-    cursor: pointer;
-    z-index: 90;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.15s;
-  }
-  .fab:active { transform: scale(0.9); }
-
-  .mobile-bottom-bar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: white;
-    border-top: 2px solid var(--border);
-    padding: 8px 10px;
-    display: none;
-    gap: 8px;
-    z-index: 95;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
-    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
-  }
-  .mobile-bottom-bar .btn { flex: 1; font-size: 12px; padding: 8px 6px; }
-
+  /* ============================================================
+     👁️ PREVIEW (SPREAD) — تخطيط عمودي للجوال
+     ============================================================ */
   .preview-toolbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-    padding: 10px;
-    background: #faf6ef;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding: 8px;
+    background: rgba(139,94,52,0.06);
     border-radius: var(--radius-sm);
-    flex-wrap: wrap;
   }
   .preview-indicator {
-    font-size: 13px;
+    font-size: var(--fs-sm);
     font-weight: 700;
     color: var(--primary-dark);
-    min-width: 80px;
+    min-width: 60px;
     text-align: center;
   }
+
   .preview-spread-container {
     perspective: 2000px;
   }
   .preview-spread {
-    gap: 4px;
+    gap: 8px;
     justify-content: center;
     align-items: stretch;
     animation: fadeIn 0.3s ease;
-    flex-wrap: nowrap;
+    flex-direction: column;
   }
   .preview-spread-page {
     flex: 1;
-    max-width: 50%;
     background: white;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
     overflow: hidden;
-    border-radius: 4px;
-    min-height: 500px;
+    border-radius: 6px;
+    min-height: 350px;
     position: relative;
   }
-  .preview-spread[data-dir="rtl"] { flex-direction: row-reverse; }
-  .preview-spread[data-dir="ltr"] { flex-direction: row; }
 
+  .preview-page {
+    background: var(--card);
+    padding: 20px;
+    border-radius: 6px;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 12px;
+    min-height: 300px;
+    position: relative;
+    line-height: 1.8;
+    overflow-wrap: break-word;
+  }
+  .preview-page.lined {
+    background-image: repeating-linear-gradient(transparent, transparent 33px, #e5e7eb 34px);
+    background-position: 0 24px;
+  }
+  .preview-page.dotted {
+    background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  .preview-page.vintage { background: #f5ecd7; }
+
+  .preview-header, .preview-footer {
+    font-size: 11px;
+    color: #888;
+    text-align: center;
+    padding: 6px 0;
+  }
+  .preview-footer {
+    border-top: 1px solid #eee;
+    margin-top: 16px;
+  }
+
+  /* ============================================================
+     💾 PDF PROGRESS
+     ============================================================ */
   .pdf-progress-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.85);
+    background: rgba(0,0,0,0.88);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -815,6 +1035,7 @@
     color: white;
     font-family: 'Cairo', sans-serif;
     gap: 20px;
+    padding: 20px;
   }
   .pdf-progress-spinner {
     width: 60px;
@@ -826,59 +1047,220 @@
   }
   @keyframes pdfspin { to { transform: rotate(360deg); } }
   .pdf-progress-text {
-    font-size: 16px;
+    font-size: var(--fs-md);
     font-weight: 600;
     text-align: center;
-    padding: 0 20px;
+    padding: 0 12px;
   }
 
-  @media (max-width: 768px) {
-    .navbar { padding: 10px 14px; }
-    .navbar h1 { font-size: 17px; }
-    .nav-actions .btn { padding: 8px 12px; font-size: 13px; }
-    .nav-actions .btn .label-full { display: none; }
-
-    .container { padding: 12px; padding-bottom: 80px; }
-    .library-header > button { display: none; }
-    .books-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .fab { display: flex; }
-
-    .editor-layout { grid-template-columns: 1fr; gap: 12px; }
-    .form-row { grid-template-columns: 1fr; }
-
-    .mobile-bottom-bar { display: flex; }
-    .editor-layout > div:last-child { padding-bottom: 70px; }
-
-    .modal-overlay { padding: 0; align-items: stretch; }
-    .modal { max-height: 100vh; height: 100vh; border-radius: 0; padding: 14px; }
-    .stats-grid { grid-template-columns: 1fr; }
-    .book-viewer { padding: 10px 0; min-height: auto; }
-
-    .preview-spread { flex-direction: column !important; }
-    .preview-spread-page { max-width: 100%; min-height: 400px; }
+  /* ============================================================
+     🔖 BOOKMARKS
+     ============================================================ */
+  .bookmarks-panel {
+    max-height: 260px;
+    overflow-y: auto;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    background: rgba(139,94,52,0.03);
+    -webkit-overflow-scrolling: touch;
+  }
+  .bookmark-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    background: var(--card);
+    border-radius: var(--radius-sm);
+    margin-bottom: 6px;
+    font-size: var(--fs-xs);
+    gap: 8px;
+  }
+  .bookmark-item .bm-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  @media (max-width: 380px) {
-    .books-grid { grid-template-columns: 1fr; }
+  /* ============================================================
+     🍞 TOAST
+     ============================================================ */
+  .toast {
+    position: fixed;
+    bottom: calc(100px + var(--safe-bottom));
+    left: 50%;
+    transform: translateX(-50%) translateY(140px);
+    background: var(--primary-dark);
+    color: white;
+    padding: 12px 22px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: var(--fs-sm);
+    z-index: 2000;
+    transition: transform 0.3s ease;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    max-width: calc(100vw - 32px);
+    text-align: center;
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { background: var(--success); }
+  .toast.error { background: var(--danger); }
+  .toast.warning { background: var(--warning); }
+
+  /* ============================================================
+     🔻 FOOTER
+     ============================================================ */
+  .site-footer {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    color: white;
+    text-align: center;
+    padding: 14px 12px;
+    padding-bottom: calc(14px + var(--safe-bottom));
+    font-size: var(--fs-xs);
+    margin-top: auto;
+  }
+  .site-footer strong { color: var(--accent); font-weight: 700; }
+
+  /* ============================================================
+     🛠️ UTILITIES
+     ============================================================ */
+  .hidden { display: none !important; }
+
+  .measure-info {
+    background: rgba(39,174,96,0.1);
+    border: 1.5px solid var(--success);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: var(--fs-xs);
+    color: var(--success);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ============================================================
+     📱 RESPONSIVE BREAKPOINTS
+     ============================================================ */
+
+  /* شاشات صغيرة جداً (iPhone SE / 320px) */
+  @media (max-width: 360px) {
+    :root {
+      --nav-h: 52px;
+    }
+    .navbar { padding: 6px 10px; padding-top: calc(6px + var(--safe-top)); }
+    .navbar h1 { font-size: 14px; }
+    .navbar h1 span { font-size: 16px; }
+    .btn-icon { width: 38px; height: 38px; min-height: 38px; font-size: 16px; }
+    .container { padding: 10px; padding-bottom: calc(90px + var(--safe-bottom)); }
+    .panel { padding: 12px; }
+    .book-info h3 { font-size: 12px; }
+    .book-info .meta { font-size: 9px; }
+    .mobile-bottom-bar .btn { font-size: 10px; min-height: 46px; }
+    .flipbook { height: 65vh; height: 65dvh; min-height: 350px; }
+  }
+
+  /* شاشات متوسطة (iPhone 12/13/14 — 390-430px) */
+  @media (min-width: 361px) and (max-width: 480px) {
+    .books-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .flipbook { height: 72vh; height: 72dvh; }
+  }
+
+  /* شاشات كبيرة (Plus / Pro Max — 428-480px) */
+  @media (min-width: 481px) and (max-width: 640px) {
+    .books-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+    .flipbook { max-width: 480px; height: 74vh; height: 74dvh; }
+  }
+
+  /* أجهزة لوحية صغيرة */
+  @media (min-width: 641px) and (max-width: 900px) {
+    .container { max-width: 700px; }
+    .books-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .flipbook { max-width: 600px; height: 76vh; height: 76dvh; }
+  }
+
+  /* الوضع الأفقي (Landscape) على الجوال */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .navbar {
+      padding: 4px 10px;
+      padding-top: calc(4px + var(--safe-top));
+      min-height: 44px;
+    }
+    .navbar h1 { font-size: 13px; }
+    .navbar h1 span { font-size: 15px; }
+    .btn-icon { width: 34px; height: 34px; min-height: 34px; font-size: 14px; }
+    .container { padding: 8px; padding-bottom: calc(80px + var(--safe-bottom)); }
+    .flipbook {
+      height: 78vh;
+      height: 78dvh;
+      min-height: 220px;
+      max-width: 380px;
+    }
+    .book-viewer { padding: 4px 0; }
+    .viewer-controls { margin-top: 8px; gap: 6px; }
+    .mobile-bottom-bar .btn { min-height: 40px; font-size: 10px; }
+    .fab { bottom: calc(70px + var(--safe-bottom)); width: 50px; height: 50px; font-size: 24px; }
+  }
+
+  /* شاشات عالية الدقة */
+  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .book-card { box-shadow: var(--shadow-md); }
+  }
+
+  /* دعم RTL */
+  [dir="rtl"] .form-group input[type="text"] { text-align: right; }
+  [dir="ltr"] .form-group input[type="text"] { text-align: left; }
+
+  /* تقليل الحركة لمن يفضّل ذلك */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* تحسين اللمس */
+  @media (hover: none) {
+    .btn:hover { background-color: inherit; }
+    .book-card:hover { transform: none; box-shadow: var(--shadow-md); }
+  }
+
+  /* دعم الوضع الليلي للنظام */
+  @media (prefers-color-scheme: dark) {
+    body:not(.light-mode) {
+      /* يمكن تفعيلها تلقائياً إن أردت */
+    }
   }
 </style>
 </head>
 <body>
 
 <nav class="navbar">
-  <h1><span>📚</span> كتابي</h1>
+  <h1><span>📚</span> كتابي <small>v5.2</small></h1>
   <div class="nav-actions">
-    <button class="btn btn-light" onclick="goHome()">🏠 <span class="label-full">المكتبة</span></button>
-    <button class="btn btn-primary" onclick="createNewBook()">➕ <span class="label-full">كتاب جديد</span></button>
+    <button class="btn btn-light btn-icon" onclick="toggleDarkMode()" title="الوضع الليلي" aria-label="الوضع الليلي">🌙</button>
+    <button class="btn btn-light btn-icon" onclick="exportAllBooks()" title="نسخة احتياطية" aria-label="نسخة احتياطية">💾</button>
+    <button class="btn btn-light btn-icon" onclick="document.getElementById('importAllInput').click()" title="استيراد" aria-label="استيراد">📥</button>
+    <button class="btn btn-primary btn-icon" onclick="createNewBook()" title="كتاب جديد" aria-label="كتاب جديد">➕</button>
   </div>
+  <input type="file" id="importAllInput" accept=".json,application/json" class="hidden" onchange="importAllBooks(event)">
 </nav>
 
 <div class="container" id="app"></div>
 
-<button class="fab" id="fab" onclick="createNewBook()">+</button>
+<button class="fab" id="fab" onclick="createNewBook()" aria-label="كتاب جديد">+</button>
 
 <footer class="site-footer">
-  Designed and Programming by <strong>Mohamed Ali</strong> © 2025
+  Designed and Programming by <strong>Mohamed Ali</strong> © 2025 — v5.2
 </footer>
 
 <div class="modal-overlay" id="modal">
@@ -886,1631 +1268,26 @@
 </div>
 
 <div class="mobile-bottom-bar hidden" id="mobileBar">
-  <button class="btn btn-success" onclick="saveCurrentBook()">💾 حفظ</button>
-  <button class="btn btn-primary" onclick="openViewer(currentEditingId)">👁️ عرض</button>
-  <button class="btn btn-outline" onclick="exportPDF(currentEditingId)">📄 PDF</button>
+  <button class="btn btn-success" onclick="saveCurrentBook()">
+    <span class="icon">💾</span>
+    <span>حفظ</span>
+  </button>
+  <button class="btn btn-primary" onclick="openViewer(currentEditingId)">
+    <span class="icon">👁️</span>
+    <span>عرض</span>
+  </button>
+  <button class="btn btn-outline" onclick="exportPDF(currentEditingId)">
+    <span class="icon">📄</span>
+    <span>PDF</span>
+  </button>
+  <button class="btn btn-outline" onclick="goHome()">
+    <span class="icon">🏠</span>
+    <span>المكتبة</span>
+  </button>
 </div>
 
 <div class="toast" id="toast"></div>
 
-<script>
-/* ============================================================
-   ⚙️ CONSTANTS & STATE
-   ============================================================ */
-const STORAGE_KEY = 'kitabi_books_v3';
-const SEED_KEY = 'kitabi_seeded_v3';
-const MM_TO_PX = 3.7795;
-
-const PAGE_DIMENSIONS = {
-  'A4':  { width: 210, height: 297 },
-  'A5':  { width: 148, height: 210 },
-  '6x9': { width: 152.4, height: 228.6 }
-};
-
-let currentEditingId = null;
-let currentTab = 'content';
-let viewerBook = null;
-let viewerLeaves = [];
-let viewerLeafIndex = 0;
-let isMobile = window.innerWidth <= 768;
-let saveDebounceTimers = {};
-let _measureCache = new Map();
-let _pagesCache = new Map();
-let _activeKeydownHandler = null;
-let _previewSpreadIndex = 0;
-let _previewSpreadsCount = 0;
-let _isAnimating = false;
-
-/* ============================================================
-   💾 STORAGE
-   ============================================================ */
-function getBooks() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
-  catch { return []; }
-}
-function saveBooks(books) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
-    return true;
-  } catch (e) {
-    toast('مساحة التخزين ممتلئة! جرّب حذف غلاف كبير.', 'error');
-    return false;
-  }
-}
-function getBook(id) { return getBooks().find(b => b.id === id); }
-function upsertBook(book) {
-  const books = getBooks();
-  const idx = books.findIndex(b => b.id === book.id);
-  if (idx >= 0) books[idx] = book; else books.unshift(book);
-  saveBooks(books);
-  _pagesCache.delete(book.id);
-}
-function deleteBook(id) {
-  saveBooks(getBooks().filter(b => b.id !== id));
-  _pagesCache.delete(id);
-}
-
-/* ============================================================
-   🛠️ UTILS
-   ============================================================ */
-function uid() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-}
-function toast(msg, type='info') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast ' + type;
-  t.classList.add('show');
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
-}
-function escapeHtml(s='') {
-  if (s === null || s === undefined) return '';
-  return String(s).replace(/[&<>"']/g, c => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[c]));
-}
-function debounce(key, fn, delay = 400) {
-  clearTimeout(saveDebounceTimers[key]);
-  saveDebounceTimers[key] = setTimeout(fn, delay);
-}
-
-/* ============================================================
-   🌐 LANGUAGE / DIRECTION DETECTION
-   ============================================================ */
-function detectTextDirection(text) {
-  if (!text) return 'rtl';
-  const rtlChars = (text.match(/[\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC]/g) || []).length;
-  const ltrChars = (text.match(/[A-Za-z]/g) || []).length;
-  if (rtlChars === 0 && ltrChars === 0) return 'rtl';
-  return rtlChars >= ltrChars ? 'rtl' : 'ltr';
-}
-
-function detectBookDirection(book) {
-  const d = book.design || {};
-  if (d.autoDirection === false && d.direction) return d.direction;
-  const sample = [
-    book.title || '',
-    book.author || '',
-    ...(book.chapters || []).slice(0, 3).map(c => (c.content || '').slice(0, 300))
-  ].join(' ');
-  return detectTextDirection(sample);
-}
-
-/* ============================================================
-   📐 DESIGN DEFAULTS
-   ============================================================ */
-function defaultDesign() {
-  return {
-    pageColor: '#ffffff',
-    textColor: '#111111',
-    fontFamily: 'Amiri',
-    fontSize: 16,
-    lineHeight: 1.9,
-    paperStyle: 'plain',
-    pageSize: 'A5',
-    margin: 40,
-    direction: 'rtl',
-    autoDirection: true,
-    headerText: '',
-    footerText: 'Designed and Programming by Mohamed Ali',
-    showPageNumbers: true
-  };
-}
-
-function newBook() {
-  return {
-    id: uid(),
-    title: 'كتاب بدون عنوان',
-    author: '',
-    description: '',
-    category: '',
-    isbn: '',
-    cover: '',
-    backCover: '',
-    chapters: [{ title: 'الفصل الأول', content: '', order: 0 }],
-    design: defaultDesign(),
-    createdAt: Date.now(),
-    updatedAt: Date.now()
-  };
-}
-
-/* ============================================================
-   📖 SEED BOOK
-   ============================================================ */
-function getDefaultBook() {
-  return {
-    id: 'zaha-default-001',
-    title: 'زها',
-    author: 'زينب هشام',
-    description: 'رواية عن فتاة تُدعى إيلاف، تعيش في بريطانيا بعد فقدان والدتها، تبحث عن ذاتها بين رفض والدها لحلمها في دراسة الطب، ورسائل غامضة تصلها من مجهول، ورجل بقناع جلدي يظهر في كل منعطف من حياتها.',
-    category: 'رواية',
-    isbn: '',
-    cover: '',
-    backCover: '',
-    chapters: [
-      { title: 'إهداء', content: 'إلى من أهدى لي شغفًا تصمدُ أمامه حروفي، من شدَّ على يدي مُشجعًا وربَت على قلبي ببسمةٍ وكلمةٍ مُلهمة، حتمًا ستجد نفسكَ بين سطوري.', order: 0 },
-      { title: 'مقدمة', content: 'بين صفحاتٍ مُزقت وأوراقٍ بَقيَت، تمتدُ الهمساتُ كصدىً عالٍ في مكانٍ مُنزوٍ، تُجسد من عُمقِ الظلامِ مشهدًا، تتلو على كلِّ مارٍ مآسي الزمن، عن أثرٍ بقي مع تلاشي الذكريات، غُبارٌ يملأه كأنه يكسيه من صعيقِ البردِ.\n\nفما آن لإنسٍ أن يستمعَ لتلاوةٍ أقسى من صُلبِ الحجر؟\n\nحين تسقُط الأقنعة، وتشتعلُ الأضواء بوميضٍ عالٍ، حينها تُدرك الحقيقة، تُبصر ما توارى خلفَ كلِّ قناعٍ جانبك، وترى أنكَ كنتَ البطل منذُ البداية.', order: 1 },
-      { title: 'الفصل الأول: سِراج', content: 'بين أصواتِ رذاذُ المطر ورائحةُ المخبوزات التي تجتازُ المكان، جلست كما عاهدت ذاتها في ركنٍ بعيدٍ، تنظرُ لكلِّ مارٍ لعلها تجد ما يُلهمها لحياةٍ جديدة.\n\nلكن لا شيء يُعيد إحياء ما مات داخلها.\n\nلملمت كل أدواتها راغبةً في الخروج، لكن أوقفتها يدٌ تَشدُ على كتفيها، التفتت تنظر..\n\n"سِراج!"\n\nتبسم بإشراقٍ في وجهها مُعانقًا لها، تضمه بشوقٍ ويفعلُ المثل.\n\n"اشتقتُ لَكِ" نبس هامسًا لها وهو يُمسد فوق خصلاتها.\n\n"متى عُدت؟" سألته وهي تسحبه للجلوس أمامها.', order: 2 },
-      { title: 'الفصل الثاني: بلا مأوى', content: 'تسيرُ بين الطُرقاتِ بلا وجهةٌ، لا مأوى لها في الوقتِ الراهن.. كادت أن تصتدم في عربةٍ لولا يد جذبتها.\n\n"إيلاف! رجاءً انتبهي"\n\n"شردتُ فقط، لِمَ لست في المقهى؟"\n\n"قررتُ السير رفقتكِ، أتُمانعين؟"\n\n"متى ستعود لها مُجددًا؟"\n\n"قريبًا، وددتُ أن آتي لتفقد المقهى والأهم تفقدكِ"', order: 3 },
-      { title: 'الفصل الثالث: السيدة كارو', content: 'أوشكت الشمس على الغروبِ وهي ما زالت تجلس بعدما رَحل سِراج، لَملمت نفسها تذهب لمنزل السيدة كارو.\n\nتلك التي كانت تعتني بها هذه الفترة، هكذا اكتسبت بعض النقود للسعي وراء حُلمها.\n\n"لقد عُدت" فاهت بها ترفع مستوى صوتها حينما دَلفت للمنزل.', order: 4 }
-    ],
-    design: {
-      pageColor: '#fdf9f0',
-      textColor: '#2d2416',
-      fontFamily: 'Amiri',
-      fontSize: 17,
-      lineHeight: 2.0,
-      paperStyle: 'vintage',
-      pageSize: 'A5',
-      margin: 45,
-      direction: 'rtl',
-      autoDirection: true,
-      headerText: 'زها',
-      footerText: 'Designed and Programming by Mohamed Ali',
-      showPageNumbers: true
-    },
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-    isDefault: true
-  };
-}
-
-function seedDefaultBook() {
-  if (localStorage.getItem(SEED_KEY)) return;
-  const books = getBooks();
-  if (books.find(b => b.id === 'zaha-default-001')) {
-    localStorage.setItem(SEED_KEY, 'true');
-    return;
-  }
-  const defaultBook = getDefaultBook();
-  books.unshift(defaultBook);
-  saveBooks(books);
-  localStorage.setItem(SEED_KEY, 'true');
-}
-
-/* ============================================================
-   📐 REAL PAGE MEASUREMENT
-   ============================================================ */
-function createMeasureElement(design) {
-  const d = design || defaultDesign();
-  const dims = PAGE_DIMENSIONS[d.pageSize] || PAGE_DIMENSIONS['A5'];
-  const marginMm = d.margin * 0.264;
-  const contentWidthMm = Math.max(20, dims.width - marginMm * 2);
-  const contentHeightMm = Math.max(20, dims.height - marginMm * 2);
-
-  const el = document.createElement('div');
-  el.style.cssText = `
-    position: fixed;
-    left: -99999px;
-    top: 0;
-    width: ${contentWidthMm * MM_TO_PX}px;
-    height: ${contentHeightMm * MM_TO_PX}px;
-    font-family: '${d.fontFamily}', 'Amiri', sans-serif;
-    font-size: ${d.fontSize}px;
-    line-height: ${d.lineHeight};
-    direction: ${d.direction};
-    text-align: ${d.direction === 'rtl' ? 'right' : 'left'};
-    overflow: hidden;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    box-sizing: border-box;
-    visibility: hidden;
-    pointer-events: none;
-  `;
-  document.body.appendChild(el);
-  return el;
-}
-
-function measureRealCharsPerPage(design, sampleText = null) {
-  const d = design || defaultDesign();
-  const sample = sampleText || (
-    'في قديم الزمان كان هناك رجلٌ يعيش في قريةٍ صغيرةٍ على أطراف المدينة، ' +
-    'وكان له من الأولاد ثلاثة، يكبرهم جميعًا حكيمٌ يمتلك قلبًا طيبًا وعقلًا راجحًا. ' +
-    'وفي أحد الأيام قرر أن يرحل إلى المدينة بحثًا عن عملٍ يُعينه على متاعب الحياة. ' +
-    'فقال له والده: يا بني إن الدنيا دار ممرٍ لا دار مقرٍ، فاتقِ الله فيها واعمل صالحًا. '
-  ).repeat(20);
-
-  const measureEl = createMeasureElement(d);
-  const containerHeight = measureEl.clientHeight;
-
-  let low = 0, high = sample.length, best = 0;
-  while (low <= high) {
-    const mid = Math.floor((low + high) / 2);
-    measureEl.textContent = sample.slice(0, mid);
-    if (measureEl.scrollHeight <= containerHeight + 1) {
-      best = mid;
-      low = mid + 1;
-    } else {
-      high = mid - 1;
-    }
-  }
-
-  document.body.removeChild(measureEl);
-  return Math.max(50, best);
-}
-
-function getCachedCharsPerPage(design) {
-  const key = [
-    design.pageSize, design.fontFamily, design.fontSize,
-    design.lineHeight, design.margin, design.direction
-  ].join('|');
-  if (_measureCache.has(key)) return _measureCache.get(key);
-  const v = measureRealCharsPerPage(design);
-  _measureCache.set(key, v);
-  return v;
-}
-
-/* ============================================================
-   ✂️ SMART TEXT SPLITTING
-   ============================================================ */
-function findSmartCutoff(text, target) {
-  const minCut = Math.max(1, Math.floor(target * 0.7));
-  const maxCut = Math.min(text.length, Math.floor(target * 1.15));
-
-  for (let i = maxCut; i >= minCut; i--) {
-    if (text[i] === '\n' && text[i - 1] === '\n') return i + 1;
-  }
-  const enders = ['.', '؟', '!', '۔', ':', '،', '\n'];
-  for (let i = maxCut; i >= minCut; i--) {
-    if (enders.includes(text[i])) {
-      const next = text[i + 1];
-      if (!next || /\s/.test(next) || next === '\n') return i + 1;
-    }
-  }
-  for (let i = maxCut; i >= minCut; i--) {
-    if (/\s/.test(text[i])) return i + 1;
-  }
-  for (let i = target; i < Math.min(text.length, target + 30); i++) {
-    if (/\s/.test(text[i])) return i + 1;
-  }
-  return target;
-}
-
-function splitIntoPages(chapters, design) {
-  const charsPerPage = getCachedCharsPerPage(design);
-  const pages = [];
-
-  chapters.forEach((ch, chIdx) => {
-    const content = (ch.content || '').trim();
-    if (!content && chIdx !== 0) return;
-
-    let remaining = content || ' ';
-    let firstPage = true;
-
-    while (remaining.length > 0) {
-      let slice;
-      if (remaining.length <= charsPerPage) {
-        slice = remaining;
-        remaining = '';
-      } else {
-        const cutoff = findSmartCutoff(remaining, charsPerPage);
-        slice = remaining.slice(0, cutoff);
-        remaining = remaining.slice(cutoff).trimStart();
-      }
-
-      pages.push({
-        chapterIndex: chIdx,
-        chapterTitle: firstPage ? ch.title : null,
-        content: slice.trim(),
-        isChapterStart: firstPage
-      });
-
-      firstPage = false;
-    }
-  });
-
-  return pages;
-}
-
-/* ============================================================
-   📖 BUILD PAGES
-   ============================================================ */
-function buildPages(book) {
-  if (_pagesCache.has(book.id)) {
-    const cached = _pagesCache.get(book.id);
-    if (cached.updatedAt === book.updatedAt) return cached.pages;
-  }
-
-  const d = book.design || defaultDesign();
-  const pages = [];
-
-  pages.push({
-    type: 'frontCover',
-    cover: book.cover,
-    title: book.title,
-    author: book.author
-  });
-
-  pages.push({
-    type: 'title',
-    title: book.title,
-    author: book.author,
-    category: book.category
-  });
-
-  const chapters = (book.chapters || []).filter(c => c.title || c.content);
-  const contentPages = splitIntoPages(chapters, d);
-  contentPages.forEach(p => pages.push({ type: 'content', ...p }));
-
-  pages.push({ type: 'endPage', title: book.title });
-
-  pages.push({
-    type: 'backCover',
-    cover: book.backCover || '',
-    title: book.title,
-    author: book.author,
-    description: book.description
-  });
-
-  _pagesCache.set(book.id, { pages, updatedAt: book.updatedAt });
-  return pages;
-}
-
-/* ============================================================
-   🧭 NAVIGATION
-   ============================================================ */
-function goHome() {
-  currentEditingId = null;
-  document.getElementById('mobileBar').classList.add('hidden');
-  document.getElementById('fab').classList.remove('hidden');
-  renderLibrary();
-}
-function createNewBook() {
-  const b = newBook();
-  upsertBook(b);
-  openEditor(b.id);
-}
-function openEditor(id) {
-  currentEditingId = id;
-  currentTab = 'content';
-  renderEditor();
-}
-
-/* ============================================================
-   📚 LIBRARY
-   ============================================================ */
-function renderLibrary() {
-  const app = document.getElementById('app');
-  const books = getBooks();
-
-  if (books.length === 0) {
-    app.innerHTML = `
-      <div class="empty-state">
-        <div class="icon">📖</div>
-        <h3>مكتبتك فارغة</h3>
-        <p>ابدأ بإنشاء أول كتاب لك الآن</p>
-        <button class="btn btn-primary" onclick="createNewBook()">➕ إنشاء كتاب جديد</button>
-      </div>`;
-    return;
-  }
-
-  app.innerHTML = `
-    <div class="library-header">
-      <div>
-        <h2>📚 مكتبتي</h2>
-        <p>${books.length} كتاب في مكتبتك</p>
-      </div>
-      <button class="btn btn-primary" onclick="createNewBook()">➕ كتاب جديد</button>
-    </div>
-    <div class="books-grid">
-      ${books.map(b => bookCardHtml(b)).join('')}
-    </div>`;
-}
-
-function bookCardHtml(b) {
-  const cover = b.cover
-    ? `<img src="${b.cover}" class="book-cover" alt="cover">`
-    : `<div class="book-cover">${escapeHtml((b.title || 'ك')[0])}</div>`;
-  const chaptersCount = (b.chapters || []).length;
-  const dir = detectBookDirection(b);
-  const dirLabel = dir === 'rtl' ? 'عربي' : 'إنجليزي';
-  return `
-    <div class="book-card">
-      ${cover}
-      <div class="book-info">
-        <h3 title="${escapeHtml(b.title)}">${escapeHtml(b.title)}</h3>
-        <div class="author">${escapeHtml(b.author || 'مؤلف مجهول')}</div>
-        <div class="meta">
-          <span>${chaptersCount} فصل</span>
-          <span>${dirLabel}</span>
-        </div>
-      </div>
-      <div class="card-actions">
-        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openEditor('${b.id}')" title="تعديل">✏️</button>
-        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openViewer('${b.id}')" title="عرض">👁️</button>
-        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();confirmDelete('${b.id}')" title="حذف">🗑️</button>
-      </div>
-    </div>`;
-}
-
-function confirmDelete(id) {
-  const b = getBook(id);
-  if (!b) return false;
-  if (confirm(`هل أنت متأكد من حذف "${b.title}"؟`)) {
-    deleteBook(id);
-    toast('تم حذف الكتاب', 'success');
-    if (currentEditingId === id) goHome();
-    else renderLibrary();
-    return true;
-  }
-  return false;
-}
-
-/* ============================================================
-   ✏️ EDITOR
-   ============================================================ */
-function renderEditor() {
-  const b = getBook(currentEditingId);
-  if (!b) { goHome(); return; }
-  const d = b.design || defaultDesign();
-  const detectedDir = detectBookDirection(b);
-
-  if (isMobile) {
-    document.getElementById('mobileBar').classList.remove('hidden');
-    document.getElementById('fab').classList.add('hidden');
-  }
-
-  const charsPerPage = getCachedCharsPerPage(d);
-  const dims = PAGE_DIMENSIONS[d.pageSize] || PAGE_DIMENSIONS['A5'];
-
-  document.getElementById('app').innerHTML = `
-    <div class="editor-layout">
-      <div>
-        <div class="panel">
-          <h3>📝 محتوى الكتاب</h3>
-          <div class="tabs">
-            <div class="tab ${currentTab==='content'?'active':''}" onclick="switchTab('content')">📄 المحتوى</div>
-            <div class="tab ${currentTab==='info'?'active':''}" onclick="switchTab('info')">ℹ️ بيانات</div>
-            <div class="tab ${currentTab==='preview'?'active':''}" onclick="switchTab('preview')">👁️ معاينة</div>
-            <div class="tab ${currentTab==='design'?'active':''}" onclick="switchTab('design')">🎨 تصميم</div>
-          </div>
-
-          <div id="tab-content" class="${currentTab!=='content'?'hidden':''}">
-            <div class="form-group">
-              <label>عنوان الكتاب</label>
-              <input type="text" value="${escapeHtml(b.title)}" oninput="updateField('title', this.value)">
-            </div>
-
-            <div class="stats-box">
-              <h4>📊 إحصائيات الصفحة (قياس فعلي)</h4>
-              <div class="stats-grid">
-                <div class="stat-item"><span>حجم الورق</span><span>${d.pageSize}</span></div>
-                <div class="stat-item"><span>الأبعاد</span><span>${dims.width}×${dims.height}mm</span></div>
-                <div class="stat-item"><span>أحرف/صفحة</span><span>${charsPerPage}</span></div>
-                <div class="stat-item"><span>الاتجاه</span><span>${detectedDir === 'rtl' ? 'عربي ←' : '→ English'}</span></div>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>الفصول</label>
-              <div id="chaptersList"></div>
-              <button class="btn btn-outline btn-sm" onclick="addChapter()" style="margin-top:8px;width:100%">➕ إضافة فصل</button>
-            </div>
-          </div>
-
-          <div id="tab-info" class="${currentTab!=='info'?'hidden':''}">
-            <div class="form-group">
-              <label>اسم المؤلف</label>
-              <input type="text" value="${escapeHtml(b.author)}" oninput="updateField('author', this.value)">
-            </div>
-            <div class="form-group">
-              <label>التصنيف</label>
-              <input type="text" value="${escapeHtml(b.category)}" oninput="updateField('category', this.value)" placeholder="رواية، شعر، علمي...">
-            </div>
-            <div class="form-group">
-              <label>الوصف</label>
-              <textarea oninput="updateField('description', this.value)" placeholder="وصف موجز للكتاب...">${escapeHtml(b.description)}</textarea>
-            </div>
-            <div class="form-group">
-              <label>ISBN (اختياري)</label>
-              <input type="text" value="${escapeHtml(b.isbn)}" oninput="updateField('isbn', this.value)">
-            </div>
-
-            <h3 style="margin-top:20px">🖼️ الغلاف الأمامي</h3>
-            <div class="cover-preview" onclick="document.getElementById('coverInput').click()">
-              ${b.cover ? `<img src="${b.cover}">` : '<span>📷 اضغط لرفع الغلاف الأمامي</span>'}
-            </div>
-            <input type="file" id="coverInput" accept="image/*" class="hidden" onchange="handleCover(event)">
-            ${b.cover ? `<button class="btn btn-danger btn-sm" style="width:100%" onclick="removeCover()">🗑️ إزالة الغلاف الأمامي</button>` : ''}
-
-            <h3 style="margin-top:20px">🖼️ الغلاف الخلفي</h3>
-            <div class="cover-preview" onclick="document.getElementById('backCoverInput').click()">
-              ${b.backCover ? `<img src="${b.backCover}">` : '<span>📷 اضغط لرفع الغلاف الخلفي</span>'}
-            </div>
-            <input type="file" id="backCoverInput" accept="image/*" class="hidden" onchange="handleBackCover(event)">
-            ${b.backCover ? `<button class="btn btn-danger btn-sm" style="width:100%" onclick="removeBackCover()">🗑️ إزالة الغلاف الخلفي</button>` : ''}
-          </div>
-
-          <div id="tab-preview" class="${currentTab!=='preview'?'hidden':''}">
-            <div id="previewContainer"></div>
-          </div>
-
-          <div id="tab-design" class="${currentTab!=='design'?'hidden':''}">
-            <div class="form-group">
-              <label>لون الصفحة</label>
-              <input type="color" value="${d.pageColor}" oninput="updateDesign('pageColor', this.value)">
-            </div>
-            <div class="form-group">
-              <label>لون النص</label>
-              <input type="color" value="${d.textColor}" oninput="updateDesign('textColor', this.value)">
-            </div>
-            <div class="form-group">
-              <label>نوع الخط</label>
-              <select onchange="updateDesign('fontFamily', this.value)">
-                <option value="Cairo" ${d.fontFamily==='Cairo'?'selected':''}>Cairo</option>
-                <option value="Amiri" ${d.fontFamily==='Amiri'?'selected':''}>Amiri</option>
-                <option value="Tajawal" ${d.fontFamily==='Tajawal'?'selected':''}>Tajawal</option>
-                <option value="Scheherazade New" ${d.fontFamily==='Scheherazade New'?'selected':''}>Scheherazade</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label id="lbl-fontSize">حجم الخط: ${d.fontSize}px</label>
-              <input type="range" min="12" max="28" value="${d.fontSize}" oninput="updateDesignLive('fontSize', +this.value)">
-            </div>
-            <div class="form-group">
-              <label id="lbl-lineHeight">ارتفاع السطر: ${d.lineHeight}</label>
-              <input type="range" min="1.2" max="2.5" step="0.1" value="${d.lineHeight}" oninput="updateDesignLive('lineHeight', +this.value)">
-            </div>
-            <div class="form-group">
-              <label>شكل الورق</label>
-              <select onchange="updateDesign('paperStyle', this.value)">
-                <option value="plain" ${d.paperStyle==='plain'?'selected':''}>عادي</option>
-                <option value="lined" ${d.paperStyle==='lined'?'selected':''}>مسطّر</option>
-                <option value="dotted" ${d.paperStyle==='dotted'?'selected':''}>منقّط</option>
-                <option value="vintage" ${d.paperStyle==='vintage'?'selected':''}>ورق قديم</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>حجم الكتاب</label>
-              <select onchange="updateDesign('pageSize', this.value)">
-                <option value="A4" ${d.pageSize==='A4'?'selected':''}>A4</option>
-                <option value="A5" ${d.pageSize==='A5'?'selected':''}>A5</option>
-                <option value="6x9" ${d.pageSize==='6x9'?'selected':''}>6×9 inch</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label id="lbl-margin">الهوامش: ${d.margin}px</label>
-              <input type="range" min="10" max="80" value="${d.margin}" oninput="updateDesignLive('margin', +this.value)">
-            </div>
-            <div class="form-group">
-              <label>
-                <input type="checkbox" ${d.autoDirection!==false?'checked':''} onchange="updateDesign('autoDirection', this.checked)">
-                كشف الاتجاه تلقائيًا
-              </label>
-            </div>
-            <div class="form-group" ${d.autoDirection!==false?'style="opacity:0.5"':''}>
-              <label>الاتجاه (يدوي)</label>
-              <select onchange="updateDesign('direction', this.value)" ${d.autoDirection!==false?'disabled':''}>
-                <option value="rtl" ${d.direction==='rtl'?'selected':''}>عربي (RTL)</option>
-                <option value="ltr" ${d.direction==='ltr'?'selected':''}>إنجليزي (LTR)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>نص الهيدر</label>
-              <input type="text" value="${escapeHtml(d.headerText)}" oninput="updateDesign('headerText', this.value)">
-            </div>
-            <div class="form-group">
-              <label>نص الفوتر</label>
-              <input type="text" value="${escapeHtml(d.footerText)}" oninput="updateDesign('footerText', this.value)">
-            </div>
-            <div class="form-group">
-              <label><input type="checkbox" ${d.showPageNumbers?'checked':''} onchange="updateDesign('showPageNumbers', this.checked)"> إظهار أرقام الصفحات</label>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="${isMobile?'hidden':''}">
-        <div class="panel">
-          <h3>💾 حفظ وتصدير</h3>
-          <button class="btn btn-success" style="width:100%;margin-bottom:8px" onclick="saveCurrentBook()">💾 حفظ</button>
-          <button class="btn btn-primary" style="width:100%;margin-bottom:8px" onclick="openViewer('${b.id}')">📖 عرض الكتاب</button>
-          <button class="btn btn-outline" style="width:100%;margin-bottom:8px" onclick="exportPDF('${b.id}')">📄 تصدير PDF</button>
-          <button class="btn btn-danger" style="width:100%" onclick="confirmDelete('${b.id}')">🗑️ حذف الكتاب</button>
-        </div>
-      </div>
-    </div>`;
-
-  renderChapters();
-  if (currentTab === 'preview') renderPreview();
-}
-
-function switchTab(tab) {
-  currentTab = tab;
-  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-  const tabs = ['content', 'info', 'preview', 'design'];
-  const idx = tabs.indexOf(tab);
-  if (idx >= 0) document.querySelectorAll('.tab')[idx].classList.add('active');
-  document.getElementById('tab-content').classList.toggle('hidden', tab !== 'content');
-  document.getElementById('tab-info').classList.toggle('hidden', tab !== 'info');
-  document.getElementById('tab-preview').classList.toggle('hidden', tab !== 'preview');
-  document.getElementById('tab-design').classList.toggle('hidden', tab !== 'design');
-  if (tab === 'preview') renderPreview();
-}
-
-/* ============================================================
-   📝 CHAPTERS
-   ============================================================ */
-function renderChapters() {
-  const b = getBook(currentEditingId);
-  if (!b) return;
-  const list = document.getElementById('chaptersList');
-  const openStates = new Set();
-  document.querySelectorAll('.chapter-item.open').forEach(el => {
-    const m = el.id.match(/ch-(\d+)/);
-    if (m) openStates.add(+m[1]);
-  });
-  if (openStates.size === 0) openStates.add(0);
-
-  list.innerHTML = (b.chapters || []).map((c, i) => `
-    <div class="chapter-item ${openStates.has(i)?'open':''}" id="ch-${i}">
-      <div class="chapter-header" onclick="toggleChapter(${i})">
-        <span>📖 ${escapeHtml(c.title || 'فصل')}</span>
-        <button class="btn btn-danger btn-xs" onclick="event.stopPropagation();removeChapter(${i})">🗑️</button>
-      </div>
-      <div class="chapter-body">
-        <div class="form-group">
-          <label>عنوان الفصل</label>
-          <input type="text" value="${escapeHtml(c.title)}" oninput="updateChapter(${i}, 'title', this.value)">
-        </div>
-        <div class="form-group">
-          <label>محتوى الفصل</label>
-          <textarea rows="8" oninput="updateChapter(${i}, 'content', this.value)" placeholder="اكتب محتوى الفصل هنا...">${escapeHtml(c.content)}</textarea>
-        </div>
-      </div>
-    </div>`).join('');
-}
-
-function toggleChapter(i) {
-  document.getElementById(`ch-${i}`).classList.toggle('open');
-}
-function addChapter() {
-  const b = getBook(currentEditingId);
-  b.chapters.push({ title: `فصل ${b.chapters.length + 1}`, content: '', order: b.chapters.length });
-  b.updatedAt = Date.now();
-  upsertBook(b);
-  renderChapters();
-  toast('تمت إضافة فصل جديد', 'success');
-}
-function removeChapter(i) {
-  const b = getBook(currentEditingId);
-  if (b.chapters.length === 1) { toast('لا يمكن حذف الفصل الأخير', 'error'); return; }
-  if (!confirm('حذف هذا الفصل؟')) return;
-  b.chapters.splice(i, 1);
-  b.updatedAt = Date.now();
-  upsertBook(b);
-  renderChapters();
-}
-function updateChapter(i, field, value) {
-  const b = getBook(currentEditingId);
-  b.chapters[i][field] = value;
-  b.updatedAt = Date.now();
-  _pagesCache.delete(b.id);
-  debounce(`chapter-${i}-${field}`, () => upsertBook(b), 400);
-}
-
-/* ============================================================
-   ✏️ FIELDS / DESIGN
-   ============================================================ */
-function updateField(field, value) {
-  const b = getBook(currentEditingId);
-  b[field] = value;
-  b.updatedAt = Date.now();
-  _pagesCache.delete(b.id);
-  debounce(`field-${field}`, () => upsertBook(b), 400);
-}
-
-function updateDesignLive(field, value) {
-  const b = getBook(currentEditingId);
-  if (!b.design) b.design = defaultDesign();
-  b.design[field] = value;
-  b.updatedAt = Date.now();
-  _measureCache.clear();
-  _pagesCache.delete(b.id);
-
-  const labelMap = {
-    fontSize: { id: 'lbl-fontSize', prefix: 'حجم الخط: ', suffix: 'px' },
-    lineHeight: { id: 'lbl-lineHeight', prefix: 'ارتفاع السطر: ', suffix: '' },
-    margin: { id: 'lbl-margin', prefix: 'الهوامش: ', suffix: 'px' }
-  };
-  const info = labelMap[field];
-  if (info) {
-    const lbl = document.getElementById(info.id);
-    if (lbl) lbl.textContent = info.prefix + value + info.suffix;
-  }
-
-  debounce(`design-${field}`, () => upsertBook(b), 400);
-
-  if (currentTab === 'preview') {
-    debounce('preview-refresh', renderPreview, 600);
-  }
-}
-
-function updateDesign(field, value) {
-  const b = getBook(currentEditingId);
-  if (!b.design) b.design = defaultDesign();
-  b.design[field] = value;
-  b.updatedAt = Date.now();
-  _measureCache.clear();
-  _pagesCache.delete(b.id);
-  upsertBook(b);
-
-  if (field === 'pageSize' || field === 'autoDirection') {
-    renderEditor();
-    setTimeout(() => switchTab('design'), 10);
-    return;
-  }
-  if (currentTab === 'preview') renderPreview();
-}
-
-/* ============================================================
-   🖼️ COVERS
-   ============================================================ */
-function handleCover(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  if (file.size > 2 * 1024 * 1024) {
-    toast('حجم الصورة كبير! الحد الأقصى 2MB', 'error');
-    e.target.value = '';
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const b = getBook(currentEditingId);
-    b.cover = ev.target.result;
-    b.updatedAt = Date.now();
-    upsertBook(b);
-    renderEditor();
-    switchTab('info');
-    toast('تم رفع الغلاف الأمامي', 'success');
-  };
-  reader.readAsDataURL(file);
-}
-function removeCover() {
-  const b = getBook(currentEditingId);
-  b.cover = '';
-  b.updatedAt = Date.now();
-  upsertBook(b);
-  renderEditor();
-  switchTab('info');
-}
-
-function handleBackCover(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  if (file.size > 2 * 1024 * 1024) {
-    toast('حجم الصورة كبير! الحد الأقصى 2MB', 'error');
-    e.target.value = '';
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const b = getBook(currentEditingId);
-    b.backCover = ev.target.result;
-    b.updatedAt = Date.now();
-    upsertBook(b);
-    renderEditor();
-    switchTab('info');
-    toast('تم رفع الغلاف الخلفي', 'success');
-  };
-  reader.readAsDataURL(file);
-}
-function removeBackCover() {
-  const b = getBook(currentEditingId);
-  b.backCover = '';
-  b.updatedAt = Date.now();
-  upsertBook(b);
-  renderEditor();
-  switchTab('info');
-}
-
-/* ============================================================
-   💾 SAVE
-   ============================================================ */
-function saveCurrentBook() {
-  const b = getBook(currentEditingId);
-  if (!b) return;
-  b.updatedAt = Date.now();
-  upsertBook(b);
-  toast('تم حفظ الكتاب بنجاح ✅', 'success');
-}
-
-/* ============================================================
-   👁️ PREVIEW
-   ============================================================ */
-function renderPreview() {
-  const b = getBook(currentEditingId);
-  if (!b) return;
-  const d = { ...(b.design || defaultDesign()) };
-  d.direction = detectBookDirection(b);
-  const pages = buildPages(b);
-  const container = document.getElementById('previewContainer');
-
-  const spreads = [];
-  for (let i = 0; i < pages.length; i += 2) {
-    spreads.push({
-      left: pages[i],
-      right: pages[i + 1] || { type: 'blank' },
-      leftIndex: i,
-      rightIndex: i + 1 < pages.length ? i + 1 : -1
-    });
-  }
-
-  container.innerHTML = `
-    <div class="preview-toolbar">
-      <button class="btn btn-outline btn-sm" onclick="previewGo(-1)">◀ السابق</button>
-      <span id="previewIndicator" class="preview-indicator">1 / ${spreads.length}</span>
-      <button class="btn btn-outline btn-sm" onclick="previewGo(1)">التالي ▶</button>
-    </div>
-    <div class="preview-spread-container">
-      ${spreads.map((s, idx) => `
-        <div class="preview-spread" data-spread="${idx}" data-dir="${d.direction}" style="display:${idx === 0 ? 'flex' : 'none'}">
-          <div class="preview-spread-page">
-            ${renderPreviewPage(s.left, d, s.leftIndex)}
-          </div>
-          <div class="preview-spread-page">
-            ${renderPreviewPage(s.right, d, s.rightIndex)}
-          </div>
-        </div>
-      `).join('')}
-    </div>
-    <div style="text-align:center;margin-top:12px;font-size:13px;color:var(--muted)">
-      📖 ${spreads.length} صفحة مزدوجة — الاتجاه: ${d.direction === 'rtl' ? 'عربي (يمين ←)' : 'إنجليزي (→ شمال)'}
-    </div>
-  `;
-
-  _previewSpreadIndex = 0;
-  _previewSpreadsCount = spreads.length;
-  updatePreviewIndicator();
-}
-
-function previewGo(delta) {
-  let idx = _previewSpreadIndex + delta;
-  if (idx < 0) idx = 0;
-  if (idx >= _previewSpreadsCount) idx = _previewSpreadsCount - 1;
-  _previewSpreadIndex = idx;
-  document.querySelectorAll('.preview-spread').forEach((el, i) => {
-    el.style.display = i === idx ? 'flex' : 'none';
-  });
-  updatePreviewIndicator();
-}
-
-function updatePreviewIndicator() {
-  const el = document.getElementById('previewIndicator');
-  if (el) el.textContent = `${_previewSpreadIndex + 1} / ${_previewSpreadsCount}`;
-}
-
-function renderPreviewPage(p, d, index) {
-  const baseStyle = `
-    background-color:${d.pageColor};
-    color:${d.textColor};
-    font-family:'${d.fontFamily}',sans-serif;
-    font-size:${d.fontSize}px;
-    line-height:${d.lineHeight};
-    direction:${d.direction};
-  `;
-
-  if (p.type === 'frontCover') {
-    if (p.cover) {
-      return `<div class="preview-page" style="padding:0;background:#000;position:relative;min-height:500px">
-        <img src="${p.cover}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0">
-      </div>`;
-    }
-    return `<div class="preview-page" style="padding:0;background:linear-gradient(135deg,#8b5e34,#5c3d1f);position:relative;min-height:500px;display:flex;align-items:center;justify-content:center;color:white;text-align:center">
-      <div style="padding:40px">
-        <h1 style="font-family:'Amiri',serif;font-size:2.5em;color:#d4a373;margin-bottom:20px">${escapeHtml(p.title)}</h1>
-        <p style="opacity:0.9">${escapeHtml(p.author || '')}</p>
-      </div>
-    </div>`;
-  }
-
-  if (p.type === 'backCover') {
-    if (p.cover) {
-      return `<div class="preview-page" style="padding:0;background:#000;position:relative;min-height:500px">
-        <img src="${p.cover}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;filter:brightness(0.55)">
-        <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.92),transparent);padding:40px;display:flex;flex-direction:column;justify-content:flex-end;color:white">
-          <h2 style="color:#d4a373;margin-bottom:12px">${escapeHtml(p.title)}</h2>
-          <p style="opacity:0.9;font-size:0.9em">${escapeHtml(p.description || '')}</p>
-        </div>
-      </div>`;
-    }
-    return `<div class="preview-page" style="padding:40px;background:linear-gradient(135deg,#5c3d1f,#8b5e34);position:relative;min-height:500px;display:flex;flex-direction:column;justify-content:center;align-items:center;color:white;text-align:center">
-      <h2 style="font-family:'Amiri',serif;font-size:1.8em;color:#d4a373;margin-bottom:20px">${escapeHtml(p.title)}</h2>
-      <p style="opacity:0.9;font-size:0.9em">${escapeHtml(p.description || '')}</p>
-      <div style="margin-top:30px;font-size:24px;opacity:0.5">✦ ✦ ✦</div>
-    </div>`;
-  }
-
-  if (p.type === 'title') {
-    return `<div class="preview-page ${d.paperStyle}" style="${baseStyle};text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center">
-      <h1 style="font-size:2em;margin-bottom:20px">${escapeHtml(p.title)}</h1>
-      ${p.author ? `<p style="font-size:1.2em;opacity:0.7;margin-bottom:16px">${escapeHtml(p.author)}</p>` : ''}
-      ${p.category ? `<p style="opacity:0.5">${escapeHtml(p.category)}</p>` : ''}
-    </div>`;
-  }
-
-  if (p.type === 'endPage') {
-    return `<div class="preview-page ${d.paperStyle}" style="${baseStyle};text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center">
-      <div style="font-size:48px;margin-bottom:20px;opacity:0.5">✦</div>
-      <h2 style="font-family:'Amiri',serif;font-size:1.5em;margin-bottom:16px;opacity:0.7">النهاية</h2>
-    </div>`;
-  }
-
-  if (!p || p.type === 'blank') {
-    return `<div class="preview-page" style="${baseStyle}"></div>`;
-  }
-
-  return `<div class="preview-page ${d.paperStyle}" style="${baseStyle};padding:${d.margin}px;box-sizing:border-box;display:flex;flex-direction:column">
-    ${d.headerText ? `<div class="preview-header">${escapeHtml(d.headerText)}</div>` : ''}
-    <div style="flex:1;min-height:0;overflow:hidden">
-      ${p.chapterTitle ? `<h2 style="margin:0 0 16px 0;font-size:1.5em">${escapeHtml(p.chapterTitle)}</h2>` : ''}
-      <div style="white-space:pre-wrap;overflow-wrap:break-word">${escapeHtml(p.content) || ''}</div>
-    </div>
-    ${d.footerText ? `<div class="preview-footer">${escapeHtml(d.footerText)}</div>` : ''}
-    ${d.showPageNumbers && index >= 0 ? `<div style="text-align:center;font-size:12px;color:#999;margin-top:10px">${index + 1}</div>` : ''}
-  </div>`;
-}
-
-/* ============================================================
-   📖 BOOK VIEWER
-   ============================================================ */
-function openViewer(id) {
-  const b = getBook(id);
-  if (!b) return;
-  viewerBook = b;
-  const pages = buildPages(b);
-  viewerLeaves = pagesToLeaves(pages);
-  viewerLeafIndex = 0;
-  _isAnimating = false;
-  renderViewer();
-  document.getElementById('modal').classList.add('active');
-  document.body.style.overflow = 'hidden';
-}
-
-/* ✅ pairing بسيط + padding لعدد زوجي */
-function pagesToLeaves(pages) {
-  if (!pages || pages.length === 0) return [];
-
-  const padded = [...pages];
-  while (padded.length % 2 !== 0) {
-    padded.push({ type: 'blank' });
-  }
-
-  const leaves = [];
-  for (let i = 0; i < padded.length; i += 2) {
-    leaves.push({
-      front: padded[i],
-      frontIndex: i,
-      back: padded[i + 1] || { type: 'blank' },
-      backIndex: i + 1 < padded.length ? i + 1 : -1
-    });
-  }
-  return leaves;
-}
-
-function closeModal() {
-  document.getElementById('modal').classList.remove('active');
-  document.body.style.overflow = '';
-  viewerBook = null;
-  viewerLeaves = [];
-  viewerLeafIndex = 0;
-  _isAnimating = false;
-  if (_activeKeydownHandler) {
-    document.removeEventListener('keydown', _activeKeydownHandler);
-    _activeKeydownHandler = null;
-  }
-}
-
-function renderViewer() {
-  const b = viewerBook;
-  const d = { ...(b.design || defaultDesign()) };
-  d.direction = detectBookDirection(b);
-  const totalLeaves = viewerLeaves.length;
-
-  const pageBaseStyle = `
-    background-color:${d.pageColor};
-    color:${d.textColor};
-    font-family:'${d.fontFamily}',sans-serif;
-    font-size:${d.fontSize}px;
-    line-height:${d.lineHeight};
-    direction:${d.direction};
-  `;
-
-  const paperClass = d.paperStyle !== 'plain' ? d.paperStyle : '';
-
-  const leavesHtml = viewerLeaves.map((leaf, i) => {
-    const frontHtml = renderViewerPage(leaf.front, leaf.frontIndex, d, paperClass, pageBaseStyle, 'front');
-    const backHtml = renderViewerPage(leaf.back, leaf.backIndex, d, paperClass, pageBaseStyle, 'back');
-
-    return `
-      <div class="leaf" data-index="${i}">
-        <div class="face front">${frontHtml}</div>
-        <div class="face back">${backHtml}</div>
-      </div>`;
-  }).join('');
-
-  document.getElementById('modalContent').innerHTML = `
-    <div class="modal-header">
-      <h3>📖 ${escapeHtml(b.title)} <span style="font-size:12px;color:var(--muted);font-weight:400">(${d.direction === 'rtl' ? 'عربي — يفتح من اليمين' : 'English — opens from left'})</span></h3>
-      <button class="close-btn" onclick="closeModal()">×</button>
-    </div>
-
-    <div class="book-viewer ${isMobile ? 'mobile-mode' : ''}">
-      <div class="flipbook closed" data-dir="${d.direction}" id="flipbookEl">
-        <div class="flipbook-bg"></div>
-        ${leavesHtml}
-      </div>
-    </div>
-
-    <div class="page-indicator"><span id="pageInfo"></span></div>
-
-    <div class="viewer-controls">
-      <button class="btn btn-outline" onclick="prevLeaf()" id="prevBtn" disabled>← السابق</button>
-      <button class="btn btn-primary" onclick="nextLeaf()" id="nextBtn">📖 فتح الكتاب →</button>
-    </div>
-
-    <div style="display:flex;justify-content:center;gap:10px;margin-top:14px;flex-wrap:wrap">
-      <button class="btn btn-success" onclick="exportPDF('${b.id}')">📄 تصدير PDF</button>
-    </div>
-
-    ${d.footerText ? `<div style="text-align:center;font-size:11px;color:#aaa;margin-top:16px">${escapeHtml(d.footerText)}</div>` : ''}`;
-
-  updateLeavesState();
-  attachCoverClickHandler();
-
-  _activeKeydownHandler = (e) => {
-    if (!document.getElementById('modal').classList.contains('active')) return;
-    const isRTL = d.direction === 'rtl';
-    if (e.key === 'ArrowLeft') isRTL ? nextLeaf() : prevLeaf();
-    else if (e.key === 'ArrowRight') isRTL ? prevLeaf() : nextLeaf();
-    else if (e.key === 'Escape') closeModal();
-  };
-  document.addEventListener('keydown', _activeKeydownHandler);
-}
-
-/* ✅ ربط الضغط على الغلاف المقفول */
-function attachCoverClickHandler() {
-  const flipbook = document.getElementById('flipbookEl');
-  if (!flipbook) return;
-  const coverLeaf = flipbook.querySelector('.leaf[data-index="0"]');
-  if (coverLeaf) {
-    coverLeaf.addEventListener('click', (e) => {
-      if (flipbook.classList.contains('closed') && !_isAnimating) {
-        e.stopPropagation();
-        openBook();
-      }
-    });
-  }
-}
-
-/* ✅ دالة فتح الكتاب من حالة الإغلاق */
-function openBook() {
-  const flipbook = document.getElementById('flipbookEl');
-  if (!flipbook || !flipbook.classList.contains('closed')) return;
-  if (_isAnimating) return;
-  _isAnimating = true;
-
-  // إزالة الكلاس closed (يظهر باقي الأوراق)
-  flipbook.classList.remove('closed');
-
-  // إعادة حساب z-index
-  applyZIndexes();
-
-  // بعد انتهاء الأنيميشن، اقلب أول ورقة
-  setTimeout(() => {
-    if (viewerLeafIndex < viewerLeaves.length) {
-      viewerLeafIndex++;
-      updateLeavesState();
-    }
-    _isAnimating = false;
-  }, 1050);
-}
-
-function renderViewerPage(page, pageIndex, d, paperClass, baseStyle, side) {
-  if (!page || page.type === 'blank') {
-    return `<div class="page-content ${paperClass}" style="${baseStyle}"></div>`;
-  }
-
-  if (page.type === 'frontCover') {
-    if (page.cover) {
-      return `<div class="page-content cover-full" style="padding:0;position:relative;background:#000">
-        <img src="${page.cover}" style="width:100%;height:100%;object-fit:cover;display:block">
-      </div>`;
-    }
-    return `<div class="page-content cover-full" style="padding:0;position:relative;background:linear-gradient(135deg,#8b5e34,#5c3d1f);display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;color:white">
-      <div style="position:absolute;inset:20px;border:2px solid rgba(212,163,115,0.6);border-radius:8px;pointer-events:none"></div>
-      <div style="padding:60px 40px;position:relative;z-index:1">
-        <h1 style="font-family:'Amiri',serif;font-size:2.3em;margin-bottom:24px;color:#d4a373;text-shadow:0 2px 10px rgba(0,0,0,0.4)">${escapeHtml(page.title)}</h1>
-        <div style="width:80px;height:2px;background:#d4a373;margin:0 auto 24px"></div>
-        ${page.author ? `<p style="font-size:1.2em;opacity:0.9;letter-spacing:2px">${escapeHtml(page.author)}</p>` : ''}
-      </div>
-    </div>`;
-  }
-
-  if (page.type === 'backCover') {
-    if (page.cover) {
-      return `<div class="page-content cover-full" style="padding:0;position:relative;background:#000">
-        <img src="${page.cover}" style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(0.55)">
-        <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.2) 100%);display:flex;flex-direction:column;justify-content:flex-end;padding:40px;color:white">
-          <h2 style="font-family:'Amiri',serif;font-size:1.8em;margin-bottom:12px;color:#d4a373">${escapeHtml(page.title)}</h2>
-          ${page.author ? `<p style="font-size:1em;opacity:0.9;margin-bottom:20px;letter-spacing:1px">${escapeHtml(page.author)}</p>` : ''}
-          ${page.description ? `<p style="font-size:0.9em;line-height:1.8;opacity:0.95;margin-top:20px;border-top:1px solid rgba(212,163,115,0.4);padding-top:20px">${escapeHtml(page.description)}</p>` : ''}
-        </div>
-      </div>`;
-    }
-    return `<div class="page-content cover-full" style="padding:0;position:relative;background:linear-gradient(135deg,#5c3d1f,#8b5e34);display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;color:white">
-      <div style="position:absolute;inset:20px;border:2px solid rgba(212,163,115,0.6);border-radius:8px;pointer-events:none"></div>
-      <div style="padding:60px 40px;position:relative;z-index:1">
-        <h2 style="font-family:'Amiri',serif;font-size:1.8em;margin-bottom:20px;color:#d4a373">${escapeHtml(page.title)}</h2>
-        ${page.author ? `<p style="font-size:1em;opacity:0.8;margin-bottom:30px">${escapeHtml(page.author)}</p>` : ''}
-        ${page.description ? `<p style="font-size:0.9em;line-height:1.8;opacity:0.85;border-top:1px solid rgba(212,163,115,0.4);padding-top:20px">${escapeHtml(page.description)}</p>` : ''}
-        <div style="margin-top:40px;font-size:24px;opacity:0.5">✦ ✦ ✦</div>
-      </div>
-    </div>`;
-  }
-
-  if (page.type === 'title') {
-    return `<div class="page-content ${paperClass}" style="${baseStyle};padding:${isMobile ? 24 : d.margin}px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">
-      <h1 style="font-size:2em;margin-bottom:20px">${escapeHtml(page.title)}</h1>
-      ${page.author ? `<p style="font-size:1.2em;opacity:0.7;margin-bottom:16px">${escapeHtml(page.author)}</p>` : ''}
-      ${page.category ? `<p style="opacity:0.5">${escapeHtml(page.category)}</p>` : ''}
-    </div>`;
-  }
-
-  if (page.type === 'endPage') {
-    return `<div class="page-content ${paperClass}" style="${baseStyle};padding:${isMobile ? 24 : d.margin}px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">
-      <div style="font-size:48px;margin-bottom:20px;opacity:0.5">✦</div>
-      <h2 style="font-family:'Amiri',serif;font-size:1.5em;margin-bottom:16px;opacity:0.7">النهاية</h2>
-      <p style="font-size:0.9em;opacity:0.5;line-height:1.8;max-width:80%">شكراً لقراءتك "${escapeHtml(page.title)}"</p>
-    </div>`;
-  }
-
-  return `
-    <div class="page-content ${paperClass}" style="${baseStyle};padding:${isMobile ? 24 : d.margin}px">
-      ${d.headerText ? `<div class="page-header">${escapeHtml(d.headerText)}</div>` : ''}
-      <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column">
-        ${page.chapterTitle ? `<h2 style="margin:0 0 14px 0;font-size:1.4em;flex-shrink:0">${escapeHtml(page.chapterTitle)}</h2>` : ''}
-        <div style="white-space:pre-wrap;overflow-wrap:break-word;word-wrap:break-word;margin:0;padding:0;font-family:inherit">${escapeHtml(page.content) || ''}</div>
-      </div>
-      ${d.footerText ? `<div class="page-footer">${escapeHtml(d.footerText)}</div>` : ''}
-      ${d.showPageNumbers && pageIndex >= 0 ? `<div class="page-num">${pageIndex + 1}</div>` : ''}
-    </div>`;
-}
-
-function nextLeaf() {
-  if (_isAnimating) return;
-  const flipbook = document.getElementById('flipbookEl');
-
-  // لو الكتاب مقفول: افتحه
-  if (flipbook && flipbook.classList.contains('closed')) {
-    openBook();
-    return;
-  }
-
-  if (viewerLeafIndex < viewerLeaves.length) {
-    viewerLeafIndex++;
-    updateLeavesState();
-  }
-}
-
-function prevLeaf() {
-  if (_isAnimating) return;
-  const flipbook = document.getElementById('flipbookEl');
-
-  // لو رجعنا لأول ورقة: اقفل الكتاب
-  if (viewerLeafIndex === 1 && flipbook) {
-    viewerLeafIndex = 0;
-    updateLeavesState();
-    _isAnimating = true;
-    setTimeout(() => {
-      flipbook.classList.add('closed');
-      updateLeavesState();
-      _isAnimating = false;
-    }, 500);
-    return;
-  }
-
-  if (viewerLeafIndex > 0) {
-    viewerLeafIndex--;
-    updateLeavesState();
-  }
-}
-
-function updateLeavesState() {
-  const d = viewerBook?.design || {};
-  const isRTL = d.direction === 'rtl';
-  const totalLeaves = viewerLeaves.length;
-  const flipbook = document.getElementById('flipbookEl');
-  const isClosed = flipbook && flipbook.classList.contains('closed');
-
-  // تحديث حالة القلب
-  document.querySelectorAll('.leaf').forEach(leaf => {
-    const i = parseInt(leaf.dataset.index);
-    const isFlipped = i < viewerLeafIndex;
-    leaf.classList.toggle('flipped', isFlipped);
-  });
-
-  applyZIndexes();
-
-  // معلومات الصفحة
-  const infoEl = document.getElementById('pageInfo');
-  if (infoEl) {
-    if (isClosed || viewerLeafIndex === 0) {
-      infoEl.textContent = '📕 الكتاب مقفول — اضغط على الغلاف لفتحه';
-    } else if (viewerLeafIndex >= totalLeaves) {
-      infoEl.textContent = '📕 الغلاف الخلفي — الكتاب مغلق';
-    } else {
-      const leftLeaf = viewerLeaves[viewerLeafIndex - 1];
-      const rightLeaf = viewerLeaves[viewerLeafIndex];
-      const leftIdx = leftLeaf ? leftLeaf.backIndex : -1;
-      const rightIdx = rightLeaf ? rightLeaf.frontIndex : -1;
-      const parts = [];
-      if (isRTL) {
-        if (rightIdx >= 0) parts.push(`صفحة ${rightIdx + 1}`);
-        if (leftIdx >= 0) parts.push(`صفحة ${leftIdx + 1}`);
-      } else {
-        if (leftIdx >= 0) parts.push(`صفحة ${leftIdx + 1}`);
-        if (rightIdx >= 0) parts.push(`صفحة ${rightIdx + 1}`);
-      }
-      infoEl.textContent = `📄 ${parts.join(' — ')}`;
-    }
-  }
-
-  // الأزرار
-  const prevBtn = document.getElementById('prevBtn');
-  const nextBtn = document.getElementById('nextBtn');
-
-  if (prevBtn) {
-    prevBtn.disabled = (viewerLeafIndex === 0 && !isClosed) || _isAnimating;
-  }
-  if (nextBtn) {
-    nextBtn.disabled = viewerLeafIndex >= totalLeaves || _isAnimating;
-    if (isClosed || viewerLeafIndex === 0) {
-      nextBtn.textContent = '📖 فتح الكتاب →';
-    } else if (viewerLeafIndex >= totalLeaves) {
-      nextBtn.textContent = 'انتهى الكتاب';
-    } else {
-      nextBtn.textContent = 'التالي →';
-    }
-  }
-}
-
-/* ✅ z-index الصحيح */
-function applyZIndexes() {
-  const d = viewerBook?.design || {};
-  const isRTL = d.direction === 'rtl';
-  const totalLeaves = viewerLeaves.length;
-  const flipbook = document.getElementById('flipbookEl');
-  const isClosed = flipbook && flipbook.classList.contains('closed');
-
-  document.querySelectorAll('.leaf').forEach(leaf => {
-    const i = parseInt(leaf.dataset.index);
-    const isFlipped = i < viewerLeafIndex;
-
-    // لو الكتاب مقفول: أول ورقة فوق كل حاجة
-    if (isClosed) {
-      leaf.style.zIndex = i === 0 ? 999 : 1;
-      return;
-    }
-
-    // RTL: الورقة 0 هي الأولى (الغلاف) — z-index عالي
-    if (isRTL) {
-      leaf.style.zIndex = isFlipped ? (i + 1) : (totalLeaves - i);
-    } else {
-      leaf.style.zIndex = isFlipped ? (totalLeaves - i) : (i + 1);
-    }
-  });
-}
-
-/* ============================================================
-   📄 PDF EXPORT — jsPDF + html2canvas
-   ============================================================ */
-async function waitForFonts() {
-  if (!document.fonts) return;
-  try {
-    await Promise.all([
-      document.fonts.load('16px Amiri'),
-      document.fonts.load('16px Cairo'),
-      document.fonts.load('16px Tajawal'),
-      document.fonts.load('16px Scheherazade New'),
-      document.fonts.load('bold 16px Amiri'),
-      document.fonts.load('bold 16px Cairo')
-    ]);
-    await document.fonts.ready;
-  } catch (e) {
-    console.warn('Font loading issue:', e);
-  }
-}
-
-function safeFileName(name) {
-  const cleaned = (name || 'book').replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_').trim();
-  if (/[\u0600-\u06FF]/.test(cleaned)) return 'kitab_' + Date.now() + '.pdf';
-  return (cleaned || 'book') + '.pdf';
-}
-
-function showPDFProgress(text = 'جاري التصدير...') {
-  let el = document.getElementById('pdfProgress');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'pdfProgress';
-    el.className = 'pdf-progress-overlay';
-    el.innerHTML = `<div class="pdf-progress-spinner"></div><div id="pdfProgressText" class="pdf-progress-text">${text}</div>`;
-    document.body.appendChild(el);
-  } else {
-    el.style.display = 'flex';
-    document.getElementById('pdfProgressText').textContent = text;
-  }
-}
-function updatePDFProgress(text) {
-  const el = document.getElementById('pdfProgressText');
-  if (el) el.textContent = text;
-}
-function hidePDFProgress() {
-  const el = document.getElementById('pdfProgress');
-  if (el) el.remove();
-}
-
-async function exportPDF(id) {
-  const b = getBook(id);
-  if (!b) return;
-
-  const d = { ...(b.design || defaultDesign()) };
-  d.direction = detectBookDirection(b);
-  const pages = buildPages(b);
-
-  if (!pages || pages.length === 0) {
-    toast('لا يوجد محتوى للتصدير', 'error');
-    return;
-  }
-
-  showPDFProgress('جاري تحضير الخطوط...');
-
-  try {
-    await waitForFonts();
-    updatePDFProgress('جاري بناء الصفحات...');
-
-    const dims = PAGE_DIMENSIONS[d.pageSize] || PAGE_DIMENSIONS['A5'];
-    const widthMm = dims.width;
-    const heightMm = dims.height;
-    const pxW = Math.round(widthMm * MM_TO_PX);
-    const pxH = Math.round(heightMm * MM_TO_PX);
-
-    const stage = document.createElement('div');
-    stage.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: ${pxW}px;
-      height: ${pxH}px;
-      z-index: -9999;
-      opacity: 0.01;
-      pointer-events: none;
-      overflow: hidden;
-    `;
-    document.body.appendChild(stage);
-
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({
-      unit: 'mm',
-      format: [widthMm, heightMm],
-      orientation: 'portrait',
-      compress: true
-    });
-
-    const total = pages.length;
-    const bgColor = d.paperStyle === 'vintage' ? '#f5ecd7' : d.pageColor;
-
-    for (let i = 0; i < total; i++) {
-      updatePDFProgress(`جاري تصدير الصفحة ${i + 1} من ${total}...`);
-
-      const pageEl = document.createElement('div');
-      pageEl.style.cssText = `
-        width: ${pxW}px;
-        height: ${pxH}px;
-        box-sizing: border-box;
-        position: relative;
-        overflow: hidden;
-        background-color: ${bgColor};
-        color: ${d.textColor};
-        font-family: '${d.fontFamily}', 'Amiri', sans-serif;
-        font-size: ${d.fontSize}px;
-        line-height: ${d.lineHeight};
-        direction: ${d.direction};
-        text-align: ${d.direction === 'rtl' ? 'right' : 'left'};
-      `;
-
-      if (d.paperStyle === 'lined') {
-        const linePx = d.lineHeight * d.fontSize;
-        pageEl.style.backgroundImage = `repeating-linear-gradient(transparent, transparent ${linePx - 1}px, #e5e7eb ${linePx}px)`;
-      } else if (d.paperStyle === 'dotted') {
-        pageEl.style.backgroundImage = 'radial-gradient(#cbd5e1 1px, transparent 1px)';
-        pageEl.style.backgroundSize = '20px 20px';
-      }
-
-      pageEl.innerHTML = buildPDFPageHTML(pages[i], d, i);
-      stage.innerHTML = '';
-      stage.appendChild(pageEl);
-
-      await new Promise(r => setTimeout(r, 60));
-
-      const canvas = await html2canvas(pageEl, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: bgColor,
-        logging: false,
-        width: pxW,
-        height: pxH,
-        windowWidth: pxW,
-        windowHeight: pxH
-      });
-
-      const imgData = canvas.toDataURL('image/jpeg', 0.92);
-
-      if (i > 0) pdf.addPage([widthMm, heightMm], 'portrait');
-      pdf.addImage(imgData, 'JPEG', 0, 0, widthMm, heightMm, undefined, 'FAST');
-    }
-
-    document.body.removeChild(stage);
-
-    const fileName = safeFileName(b.title);
-    pdf.save(fileName);
-
-    hidePDFProgress();
-    toast('تم تصدير PDF بنجاح ✅', 'success');
-  } catch (err) {
-    console.error('PDF Export Error:', err);
-    hidePDFProgress();
-    document.querySelectorAll('div[style*="-9999"]').forEach(el => el.remove());
-    toast('فشل التصدير: ' + (err.message || 'خطأ غير معروف'), 'error');
-  }
-}
-
-function buildPDFPageHTML(p, d, pageIndex) {
-  const pad = d.margin;
-  const align = d.direction === 'rtl' ? 'right' : 'left';
-
-  if (p.type === 'frontCover') {
-    if (p.cover) {
-      return `<img src="${p.cover}" style="width:100%;height:100%;object-fit:cover;display:block" crossorigin="anonymous">`;
-    }
-    return `<div style="width:100%;height:100%;background:linear-gradient(135deg,#8b5e34,#5c3d1f);display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;color:white;position:relative;box-sizing:border-box;padding:60px">
-      <div style="position:absolute;inset:20px;border:2px solid rgba(212,163,115,0.6);border-radius:8px;"></div>
-      <h1 style="font-family:'Amiri',serif;font-size:2.3em;color:#d4a373;margin:0 0 24px 0;text-shadow:0 2px 10px rgba(0,0,0,0.4)">${escapeHtml(p.title)}</h1>
-      <div style="width:80px;height:2px;background:#d4a373;margin-bottom:24px"></div>
-      ${p.author ? `<p style="font-size:1.2em;opacity:0.9;margin:0">${escapeHtml(p.author)}</p>` : ''}
-    </div>`;
-  }
-
-  if (p.type === 'backCover') {
-    if (p.cover) {
-      return `<div style="width:100%;height:100%;position:relative;overflow:hidden">
-        <img src="${p.cover}" style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(0.55)" crossorigin="anonymous">
-        <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.92),transparent);display:flex;flex-direction:column;justify-content:flex-end;padding:40px;color:white;box-sizing:border-box">
-          <h2 style="font-family:'Amiri',serif;font-size:1.8em;color:#d4a373;margin:0 0 16px 0">${escapeHtml(p.title)}</h2>
-          ${p.author ? `<p style="opacity:0.9;margin:0 0 20px 0">${escapeHtml(p.author)}</p>` : ''}
-          ${p.description ? `<p style="font-size:0.9em;line-height:1.8;border-top:1px solid rgba(212,163,115,0.4);padding-top:20px;margin:0">${escapeHtml(p.description)}</p>` : ''}
-        </div>
-      </div>`;
-    }
-    return `<div style="width:100%;height:100%;background:linear-gradient(135deg,#5c3d1f,#8b5e34);display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;color:white;padding:60px;box-sizing:border-box;position:relative">
-      <div style="position:absolute;inset:20px;border:2px solid rgba(212,163,115,0.6);border-radius:8px;"></div>
-      <h2 style="font-family:'Amiri',serif;font-size:1.8em;color:#d4a373;margin:0 0 20px 0">${escapeHtml(p.title)}</h2>
-      ${p.author ? `<p style="font-size:1em;opacity:0.8;margin:0 0 30px 0">${escapeHtml(p.author)}</p>` : ''}
-      ${p.description ? `<p style="font-size:0.9em;line-height:1.8;opacity:0.85;border-top:1px solid rgba(212,163,115,0.4);padding-top:20px;margin:0">${escapeHtml(p.description)}</p>` : ''}
-    </div>`;
-  }
-
-  if (p.type === 'title') {
-    return `<div style="width:100%;height:100%;padding:${pad}px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">
-      <h1 style="font-size:2em;margin:0 0 20px 0">${escapeHtml(p.title)}</h1>
-      ${p.author ? `<p style="font-size:1.2em;opacity:0.7;margin:0 0 16px 0">${escapeHtml(p.author)}</p>` : ''}
-      ${p.category ? `<p style="opacity:0.5;margin:0">${escapeHtml(p.category)}</p>` : ''}
-    </div>`;
-  }
-
-  if (p.type === 'endPage') {
-    return `<div style="width:100%;height:100%;padding:${pad}px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">
-      <div style="font-size:48px;opacity:0.5;margin-bottom:20px">✦</div>
-      <h2 style="font-family:'Amiri',serif;font-size:1.5em;opacity:0.7;margin:0 0 16px 0">النهاية</h2>
-      <p style="font-size:0.9em;opacity:0.5;line-height:1.8;margin:0">شكراً لقراءتك "${escapeHtml(p.title)}"</p>
-    </div>`;
-  }
-
-  if (p.type === 'blank') {
-    return `<div style="width:100%;height:100%"></div>`;
-  }
-
-  return `<div style="width:100%;height:100%;padding:${pad}px;box-sizing:border-box;display:flex;flex-direction:column;position:relative;text-align:${align}">
-    ${d.headerText ? `<div style="font-size:11px;color:#999;text-align:center;padding-bottom:8px;flex-shrink:0">${escapeHtml(d.headerText)}</div>` : ''}
-    <div style="flex:1;overflow:hidden;min-height:0">
-      ${p.chapterTitle ? `<h2 style="margin:0 0 14px 0;font-size:1.4em;font-family:'${d.fontFamily}',serif">${escapeHtml(p.chapterTitle)}</h2>` : ''}
-      <div style="white-space:pre-wrap;overflow-wrap:break-word;margin:0">${escapeHtml(p.content) || ''}</div>
-    </div>
-    ${d.footerText ? `<div style="font-size:11px;color:#aaa;text-align:center;border-top:1px solid #eee;padding-top:8px;flex-shrink:0">${escapeHtml(d.footerText)}</div>` : ''}
-    ${d.showPageNumbers && pageIndex >= 0 ? `<div style="position:absolute;bottom:${Math.max(8, pad/4)}px;${d.direction === 'rtl' ? 'left' : 'right'}:${pad}px;font-size:11px;color:#999">${pageIndex + 1}</div>` : ''}
-  </div>`;
-}
-
-/* ============================================================
-   📱 RESPONSIVE
-   ============================================================ */
-let resizeTimer;
-window.addEventListener('resize', () => {
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => {
-    const wasMobile = isMobile;
-    isMobile = window.innerWidth <= 768;
-    if (wasMobile !== isMobile) {
-      if (currentEditingId) renderEditor();
-      else renderLibrary();
-    }
-  }, 200);
-});
-
-/* ============================================================
-   👆 SWIPE
-   ============================================================ */
-let touchStartX = 0, touchStartY = 0, touchActive = false;
-document.addEventListener('touchstart', e => {
-  const modal = document.getElementById('modal');
-  if (!modal.classList.contains('active')) return;
-  if (e.touches.length !== 1) return;
-  touchStartX = e.touches[0].clientX;
-  touchStartY = e.touches[0].clientY;
-  touchActive = true;
-}, { passive: true });
-
-document.addEventListener('touchend', e => {
-  if (!touchActive) return;
-  touchActive = false;
-  const dx = e.changedTouches[0].clientX - touchStartX;
-  const dy = e.changedTouches[0].clientY - touchStartY;
-  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
-    const isRTL = (viewerBook?.design?.direction === 'rtl');
-    if (isRTL) {
-      if (dx < 0) nextLeaf();
-      else prevLeaf();
-    } else {
-      if (dx > 0) nextLeaf();
-      else prevLeaf();
-    }
-  }
-}, { passive: true });
-
-document.addEventListener('touchcancel', () => { touchActive = false; }, { passive: true });
-
-/* ============================================================
-   🚀 INIT
-   ============================================================ */
-window.addEventListener('DOMContentLoaded', () => {
-  isMobile = window.innerWidth <= 768;
-  seedDefaultBook();
-  renderLibrary();
-});
-</script>
-
+<script src="app.js"></script>
 </body>
 </html>

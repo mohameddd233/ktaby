@@ -216,7 +216,7 @@ function defaultDesign() {
     direction: 'rtl',
     autoDirection: true,
     headerText: '',
-    footerText: 'Designed and by Mohamed Ali',
+    footerText: 'Designed and Programming by Mohamed Ali',
     showPageNumbers: true,
     includeTOC: true
   };

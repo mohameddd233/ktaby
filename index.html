@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
 <meta name="theme-color" content="#5c3d1f" />
-<title>كتابي — نظام إنشاء الكتب  </title>
+<title>كتابي — نظام إنشاء الكتب v5.2</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -455,8 +455,8 @@
 
   .flipbook {
     position: relative;
-    width: 800px;
-    height: 560px;
+    width: min(92vw, 900px);
+    height: min(72vh, 620px);
     margin: 0 auto;
     transform-style: preserve-3d;
     perspective: 2500px;
@@ -669,10 +669,10 @@
   }
 
   .book-viewer.mobile-mode .flipbook {
-    width: 100%;
-    max-width: 400px;
-    height: 78vh;
-    min-height: 480px;
+    width: 94vw;
+    max-width: 460px;
+    height: 68vh;
+    min-height: 420px;
   }
   .book-viewer.mobile-mode .flipbook .leaf {
     width: 100%;
@@ -857,6 +857,10 @@
   }
   .preview-spread-container {
     perspective: 2000px;
+    min-height: 65vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
   .preview-spread {
     gap: 4px;
@@ -864,19 +868,23 @@
     align-items: stretch;
     animation: fadeIn 0.3s ease;
     flex-wrap: nowrap;
-  }
-  .preview-spread-page {
-    flex: 1;
-    max-width: 50%;
-    background: white;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.12);
-    overflow: hidden;
-    border-radius: 4px;
-    min-height: 500px;
-    position: relative;
+    width: 100%;
+    display: flex;
   }
   .preview-spread[data-dir="rtl"] { flex-direction: row-reverse; }
   .preview-spread[data-dir="ltr"] { flex-direction: row; }
+
+  .preview-spread-page {
+    flex: 0 0 auto;
+    width: calc(50% - 4px);
+    max-width: 420px;
+    aspect-ratio: 148 / 210;
+    background: white;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.15);
+    overflow: hidden;
+    border-radius: 3px;
+    position: relative;
+  }
 
   .pdf-progress-overlay {
     position: fixed;
@@ -966,7 +974,7 @@
     .book-viewer { padding: 10px 0; min-height: auto; }
 
     .preview-spread { flex-direction: column !important; }
-    .preview-spread-page { max-width: 100%; min-height: 400px; }
+    .preview-spread-page { width: 96%; max-width: 100%; max-height: 55vh; }
   }
 
   @media (max-width: 380px) {
@@ -977,7 +985,7 @@
 <body>
 
 <nav class="navbar">
-  <h1><span>📚</span> كتابي <small style="font-size:11px;opacity:0.7">v5.1</small></h1>
+  <h1><span>📚</span> كتابي <small style="font-size:11px;opacity:0.7">v5.2</small></h1>
   <div class="nav-actions">
     <button class="btn btn-light" onclick="goHome()">🏠 <span class="label-full">المكتبة</span></button>
     <button class="btn btn-light" onclick="toggleDarkMode()" title="الوضع الليلي">🌙</button>
@@ -993,7 +1001,7 @@
 <button class="fab" id="fab" onclick="createNewBook()">+</button>
 
 <footer class="site-footer">
-  Designed and Programming by <strong>Mohamed Ali</strong> © 2026 — v5.1
+  Designed and Programming by <strong>Mohamed Ali</strong> © 2026 — v5.2
 </footer>
 
 <div class="modal-overlay" id="modal">
